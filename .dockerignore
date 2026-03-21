@@ -1,0 +1,17 @@
+# DC-Visualizer 部署文件
+node_modules/
+dist/
+.git/
+.gitignore
+*.md
+*.log
+.env
+.env.local
+*.db
+*.db-journal
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+coverage/
+.nyc_output/

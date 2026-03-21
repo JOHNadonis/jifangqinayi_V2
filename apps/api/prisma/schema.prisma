@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==================== 用户管理 ====================
+// Role: ADMIN, USER
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  name      String?
+  role      String   @default("USER")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ==================== 机房管理 ====================
+// RoomType: OLD, NEW
+
+model Room {
+  id          String   @id @default(uuid())
+  name        String
+  location    String
+  type        String   @default("OLD")
+  description String?
+  racks       Rack[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("rooms")
+}
+
+// ==================== 机柜管理 ====================
+
+model Rack {
+  id          String   @id @default(uuid())
+  name        String
+  roomId      String   @map("room_id")
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  totalU      Int      @default(42) @map("total_u")
+  row         Int?
+  column      Int?
+  location    String?
+  description String?
+  devices     Device[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("racks")
+}
+
+// ==================== 设备模板 ====================
+// DeviceType: SERVER, SWITCH, ROUTER, FIREWALL, STORAGE, PDU, OTHER
+
+model DeviceTemplate {
+  id         String   @id @default(uuid())
+  brand      String
+  model      String
+  sizeU      Int      @map("size_u")
+  deviceType String   @map("device_type")
+  frontImage String?  @map("front_image")
+  rearImage  String?  @map("rear_image")
+  portLayout String   @default("{}") @map("port_layout")
+  isPublic   Boolean  @default(false) @map("is_public")
+  devices    Device[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([brand, model])
+  @@map("device_templates")
+}
+
+// ==================== 设备管理 ====================
+// DeviceStatus: ONLINE, MOVING, OFFLINE, ARRIVED
+
+model Device {
+  id         String          @id @default(uuid())
+  name       String
+  assetTag   String?         @unique @map("asset_tag")
+  templateId String          @map("template_id")
+  template   DeviceTemplate  @relation(fields: [templateId], references: [id])
+  rackId     String?         @map("rack_id")
+  rack       Rack?           @relation(fields: [rackId], references: [id], onDelete: SetNull)
+  positionU  Int?            @map("position_u")
+  status     String          @default("ONLINE")
+  notes      String?
+  cablesFrom Cable[]         @relation("CableSource")
+  cablesTo   Cable[]         @relation("CableDestination")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  @@map("devices")
+}
+
+// ==================== 连线管理 ====================
+// CableType: FIBER, CAT6, CAT5E, POWER, OTHER
+// CableStatus: RECORDED, LABELED, DISCONNECTED, VERIFIED
+
+model Cable {
+  id           String   @id @default(uuid())
+  traceCode    String   @unique @map("trace_code")
+  srcDeviceId  String   @map("src_device_id")
+  srcDevice    Device   @relation("CableSource", fields: [srcDeviceId], references: [id], onDelete: Cascade)
+  srcPortIndex String   @map("src_port_index")
+  dstDeviceId  String   @map("dst_device_id")
+  dstDevice    Device   @relation("CableDestination", fields: [dstDeviceId], references: [id], onDelete: Cascade)
+  dstPortIndex String   @map("dst_port_index")
+  cableType    String   @map("cable_type")
+  color        String?
+  length       Float?
+  purpose      String?
+  photoUrl     String?  @map("photo_url")
+  status       String   @default("RECORDED")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("cables")
+}
+
+// ==================== 同步记录 ====================
+
+model SyncLog {
+  id         String   @id @default(uuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  data       String?
+  clientId   String   @map("client_id")
+  syncedAt   DateTime @default(now()) @map("synced_at")
+
+  @@map("sync_logs")
+}

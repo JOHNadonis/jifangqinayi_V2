@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Force -Filter ''nul'' | Select-Object FullName\")"
+    ]
+  }
+}

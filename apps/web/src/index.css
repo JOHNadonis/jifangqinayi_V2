@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 机柜视图样式 */
+.rack-view {
+  background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.rack-slot {
+  height: 18px;
+  border: 1px solid #4a5568;
+  background: #2d3748;
+  transition: all 0.2s;
+}
+
+.rack-slot:hover {
+  background: #4a5568;
+}
+
+.rack-slot.occupied {
+  background: #38a169;
+  border-color: #48bb78;
+}
+
+.rack-slot.moving {
+  background: #ed8936;
+  border-color: #f6ad55;
+}
+
+.rack-slot.offline {
+  background: #e53e3e;
+  border-color: #fc8181;
+}
+
+/* 端口样式 */
+.port-item {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.port-item.rj45 {
+  background: #4299e1;
+}
+
+.port-item.sfp {
+  background: #48bb78;
+}
+
+.port-item.power {
+  background: #ed8936;
+}
+
+.port-item.connected {
+  box-shadow: 0 0 4px 2px rgba(72, 187, 120, 0.5);
+}
+
+.port-item:hover {
+  transform: scale(1.2);
+  z-index: 10;
+}
+
+/* 拓扑图节点样式 */
+.topology-node {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topology-node:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.topology-node.highlight {
+  box-shadow: 0 0 0 3px #1890ff, 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.topology-node.dimmed {
+  opacity: 0.3;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .mobile-btn {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .mobile-input {
+    font-size: 16px;
+  }
+}

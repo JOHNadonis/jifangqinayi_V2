@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  dc-visualizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dc-visualizer
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      # 数据持久化 - 数据库文件
+      - dc-data:/app/data
+      # 日志持久化
+      - dc-logs:/var/log/nginx
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/prod.db
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-me}
+      - PORT=3001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  dc-data:
+    name: dc-visualizer-data
+  dc-logs:
+    name: dc-visualizer-logs

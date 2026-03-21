@@ -1,0 +1,33 @@
+{
+  "name": "dc-visualizer",
+  "version": "1.0.0",
+  "description": "机房搬迁可视化管理系统 - Data Center Relocation Visual Management System",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:api": "pnpm --filter @dc-visualizer/api run dev",
+    "dev:web": "pnpm --filter @dc-visualizer/web run dev",
+    "build": "pnpm --parallel -r run build",
+    "build:api": "pnpm --filter @dc-visualizer/api run build",
+    "build:web": "pnpm --filter @dc-visualizer/web run build",
+    "lint": "pnpm --parallel -r run lint",
+    "test": "pnpm --parallel -r run test",
+    "db:generate": "pnpm --filter @dc-visualizer/api run db:generate",
+    "db:push": "pnpm --filter @dc-visualizer/api run db:push",
+    "db:migrate": "pnpm --filter @dc-visualizer/api run db:migrate",
+    "db:seed": "pnpm --filter @dc-visualizer/api run db:seed"
+  },
+  "keywords": [
+    "dcim",
+    "data-center",
+    "visualization",
+    "asset-management",
+    "rack-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

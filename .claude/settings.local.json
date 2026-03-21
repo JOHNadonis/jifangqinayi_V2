@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /A)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(docker --version:*)",
+      "Bash(psql:*)",
+      "Bash(pg_isready:*)",
+      "Bash(npx prisma db push)",
+      "Bash(npx prisma db seed)",
+      "Bash(pnpm dev)",
+      "Bash(findstr:*)",
+      "Bash(cd:*)",
+      "Bash(curl:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)",
+      "Bash(pnpm prisma db push:*)",
+      "Bash(npx skills-installer:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}
