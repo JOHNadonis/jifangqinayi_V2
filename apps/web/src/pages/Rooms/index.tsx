@@ -14,8 +14,8 @@ import {
   Card,
   Tag,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import { roomsApi } from '@/services/api';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, DownloadOutlined } from '@ant-design/icons';
+import { roomsApi, exportApi } from '@/services/api';
 
 const { Option } = Select;
 
@@ -126,6 +126,21 @@ export default function Rooms() {
     setIsModalVisible(false);
     setEditingRoom(null);
     form.resetFields();
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportApi.exportExcel();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `机房数据导出_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch {
+      message.error('导出失败');
+    }
   };
 
   const handleRowClick = (record: Room) => {
@@ -240,6 +255,9 @@ export default function Rooms() {
           </Space>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             新增机房
+          </Button>
+          <Button icon={<DownloadOutlined />} onClick={handleExport}>
+            导出Excel
           </Button>
         </Space>
 

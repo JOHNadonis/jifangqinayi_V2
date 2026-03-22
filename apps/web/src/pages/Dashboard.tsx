@@ -1,7 +1,7 @@
-﻿import { Card, Col, Progress, Row, Spin, Statistic, Table, Tag } from 'antd';
-import { AppstoreOutlined, HddOutlined, HomeOutlined, LinkOutlined } from '@ant-design/icons';
+﻿import { Button, Card, Col, Progress, Row, Spin, Statistic, Table, Tag, message } from 'antd';
+import { AppstoreOutlined, DownloadOutlined, HddOutlined, HomeOutlined, LinkOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { dashboardApi } from '../services/api';
+import { dashboardApi, exportApi } from '../services/api';
 
 const statusColor: Record<string, string> = {
   ONLINE: 'green',
@@ -31,6 +31,21 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { data, loading } = useRequest<DashboardStats, []>(dashboardApi.getStats);
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportApi.exportExcel();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `全量数据导出_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch {
+      message.error('导出失败');
+    }
+  };
 
   if (loading) {
     return (
@@ -66,7 +81,12 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 20 }}>Dashboard</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ margin: 0 }}>Dashboard</h2>
+        <Button icon={<DownloadOutlined />} onClick={handleExport}>
+          导出全部数据
+        </Button>
+      </div>
 
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={6}>

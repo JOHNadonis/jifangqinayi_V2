@@ -21,11 +21,12 @@ import {
   DeleteOutlined,
   SwapOutlined,
   UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { useNavigate } from 'react-router-dom';
 import { Resizable, ResizeCallbackData } from 'react-resizable';
-import { devicesApi, templatesApi, racksApi, importApi } from '@/services/api';
+import { devicesApi, templatesApi, racksApi, importApi, exportApi } from '@/services/api';
 import ImportModal from '@/components/ImportModal';
 
 const { Search } = Input;
@@ -286,6 +287,21 @@ export default function DevicesPage() {
     }),
   }));
 
+  const handleExport = async () => {
+    try {
+      const blob = await exportApi.exportExcel();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `设备数据导出_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch {
+      message.error('导出失败');
+    }
+  };
+
   // Handlers
   const handleSearch = (value: string) => {
     setSearchText(value);
@@ -473,6 +489,12 @@ export default function DevicesPage() {
                 onClick={() => setIsImportModalVisible(true)}
               >
                 导入设备
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+              >
+                导出Excel
               </Button>
             </Space>
           </Col>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Tag, Popconfirm, message, Card, Tabs, Divider } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined, MinusCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { templatesApi, importApi } from '../services/api';
+import { templatesApi, importApi, exportApi } from '../services/api';
 import ImportModal from '../components/ImportModal';
 
 const deviceTypes = [
@@ -87,6 +87,21 @@ export default function Templates() {
       },
     }
   );
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportApi.exportExcel();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `模板数据导出_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch {
+      message.error('导出失败');
+    }
+  };
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
@@ -316,6 +331,12 @@ export default function Templates() {
             onClick={() => setImportModalOpen(true)}
           >
             导入模板
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+          >
+            导出Excel
           </Button>
         </Space>
       </div>

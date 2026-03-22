@@ -21,8 +21,9 @@ import {
   EyeOutlined,
   SearchOutlined,
   UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
-import { racksApi, roomsApi, importApi } from '@/services/api';
+import { racksApi, roomsApi, importApi, exportApi } from '@/services/api';
 import ImportModal from '@/components/ImportModal';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -281,6 +282,21 @@ const RacksPage: React.FC = () => {
     });
   };
 
+  const handleExport = async () => {
+    try {
+      const blob = await exportApi.exportExcel();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `机柜数据导出_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch {
+      message.error('导出失败');
+    }
+  };
+
   return (
     <Card>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -317,6 +333,12 @@ const RacksPage: React.FC = () => {
             onClick={() => setIsImportModalVisible(true)}
           >
             导入机柜
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+          >
+            导出Excel
           </Button>
         </Space>
 
