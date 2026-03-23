@@ -353,7 +353,7 @@ export default function Topology() {
               style={{ width: 200 }}
               value={selectedRoom || undefined}
               onChange={setSelectedRoom}
-              options={(rooms as any)?.items?.map((r: any) => ({ label: r.name, value: r.id })) || []}
+              options={(rooms as any)?.data?.map((r: any) => ({ label: r.name, value: r.id })) || []}
             />
             <Button icon={<ReloadOutlined />} onClick={refresh} disabled={!selectedRoom}>
               刷新

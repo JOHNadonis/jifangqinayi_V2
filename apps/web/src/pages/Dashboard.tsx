@@ -56,9 +56,9 @@ export default function Dashboard() {
   }
 
   const deviceColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Template', dataIndex: 'template', key: 'template' },
-    { title: 'Location', dataIndex: 'location', key: 'location' },
+    { title: '设备名称', dataIndex: 'name', key: 'name' },
+    { title: '模板', dataIndex: 'template', key: 'template' },
+    { title: '位置', dataIndex: 'location', key: 'location' },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -91,34 +91,34 @@ export default function Dashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={6}>
           <Card>
-            <Statistic title="Rooms" value={data?.overview?.totalRooms ?? 0} prefix={<HomeOutlined />} />
+            <Statistic title="机房" value={data?.overview?.totalRooms ?? 0} prefix={<HomeOutlined />} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card>
-            <Statistic title="Racks" value={data?.overview?.totalRacks ?? 0} prefix={<AppstoreOutlined />} />
+            <Statistic title="机柜" value={data?.overview?.totalRacks ?? 0} prefix={<AppstoreOutlined />} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card>
-            <Statistic title="Devices" value={data?.overview?.totalDevices ?? 0} prefix={<HddOutlined />} />
+            <Statistic title="设备" value={data?.overview?.totalDevices ?? 0} prefix={<HddOutlined />} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card>
-            <Statistic title="Cables" value={data?.overview?.totalCables ?? 0} prefix={<LinkOutlined />} />
+            <Statistic title="线缆" value={data?.overview?.totalCables ?? 0} prefix={<LinkOutlined />} />
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
-          <Card title="Migration Progress">
+          <Card title="搬迁进度">
             <Progress percent={data?.overview?.migrationProgress ?? 0} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Cable Recovery">
+          <Card title="线缆回收率">
             <Progress percent={data?.overview?.cableRecoveryRate ?? 0} status="active" />
           </Card>
         </Col>
@@ -126,12 +126,12 @@ export default function Dashboard() {
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
-          <Card title="Recent Devices">
+          <Card title="最近设备">
             <Table rowKey="id" pagination={false} size="small" columns={deviceColumns} dataSource={data?.recentDevices ?? []} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Recent Cables">
+          <Card title="最近线缆">
             <Table rowKey="id" pagination={false} size="small" columns={cableColumns} dataSource={data?.recentCables ?? []} />
           </Card>
         </Col>
