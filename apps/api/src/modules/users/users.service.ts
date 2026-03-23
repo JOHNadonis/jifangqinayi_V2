@@ -17,6 +17,10 @@ export class UsersService {
     });
   }
 
+  async create(data: { username: string; password: string; name: string }) {
+    return this.prisma.user.create({ data });
+  }
+
   async findAll() {
     return this.prisma.user.findMany({
       select: {

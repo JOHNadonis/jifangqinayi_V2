@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { CablesService } from './cables.service';
 import { CablesController } from './cables.controller';
 import { PrismaModule } from '../../common/prisma/prisma.module';
+import { LogsModule } from '../logs/logs.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, LogsModule],
   controllers: [CablesController],
   providers: [CablesService],
   exports: [CablesService],

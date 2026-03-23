@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../stores/authStore';
@@ -16,13 +16,7 @@ export default function Login() {
       const response: any = await authApi.login(values);
       login(response.accessToken, response.user);
       message.success('登录成功');
-
-      // 根据屏幕宽度跳转
-      if (window.innerWidth < 768) {
-        navigate('/mobile');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate('/projects');
     } catch (error: any) {
       message.error(error.message || '登录失败');
     } finally {
@@ -77,6 +71,9 @@ export default function Login() {
 
         <div style={{ textAlign: 'center', color: '#999', fontSize: 12 }}>
           <p>测试账号：admin / admin123</p>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <Link to="/register">没有账号？去注册</Link>
         </div>
       </Card>
     </div>

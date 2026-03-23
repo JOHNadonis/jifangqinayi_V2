@@ -1,7 +1,26 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Get-ChildItem -Recurse -Force -Filter ''nul'' | Select-Object FullName\")"
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Force -Filter ''nul'' | Select-Object FullName\")",
+      "Read(//f/whc/code_project/**)",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@43.134.57.90 \"uname -a && free -h && df -h / && node -v 2>/dev/null; npm -v 2>/dev/null; pnpm -v 2>/dev/null; docker -v 2>/dev/null; which git 2>/dev/null; cat /etc/os-release | head -3\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"docker image rm data-center-migration-app:20260317-170500 node:20-bookworm-slim 2>/dev/null; docker builder prune -f 2>/dev/null; docker system prune -f 2>/dev/null; df -h /\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"ls /opt/dc-visualizer 2>/dev/null; ls /opt/data-center-migration 2>/dev/null; which nginx 2>/dev/null; systemctl status nginx 2>/dev/null | head -5; cat /etc/nginx/conf.d/*.conf 2>/dev/null | head -30\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cat /opt/dc-visualizer/apps/api/.env.example 2>/dev/null; echo ''===''; ls /opt/dc-visualizer/apps/api/prisma/\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"head -20 /opt/dc-visualizer/apps/api/prisma/schema.prisma\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cd /opt/dc-visualizer && pnpm install --frozen-lockfile 2>&1 | tail -10\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cd /opt/dc-visualizer && head -3 apps/web/src/pages/Rooms/Detail.tsx\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"sed -n ''13,17p'' /opt/dc-visualizer/apps/web/src/pages/Rooms/Detail.tsx\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cd /opt/dc-visualizer && sed -i ''/^  Space,$/d'' apps/web/src/pages/Rooms/Detail.tsx && pnpm run build:web 2>&1 | tail -20\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"grep -rl ''43.134.57.90'' /etc/nginx/ 2>/dev/null; echo ''===''; cat /etc/nginx/nginx.conf | grep -A5 ''server_name\\\\|listen 80''\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cd /opt/dc-visualizer/apps/api && pm2 delete dc-visualizer-api 2>/dev/null; NODE_ENV=production pm2 start dist/main.js --name dc-visualizer-api --env production 2>&1 && sleep 2 && pm2 logs dc-visualizer-api --lines 15 --nostream 2>&1\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cat /etc/nginx/conf.d/dc-visualizer.conf && echo ''===RELOAD==='' && nginx -s reload 2>&1 && curl -s http://localhost:8080/api/auth/login -X POST -H ''Content-Type: application/json'' -d ''{\"\"username\"\":\"\"admin\"\",\"\"password\"\":\"\"admin123\"\"}'' 2>&1\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"ps aux | grep sub2api | head -3; echo ''===''; ss -tlnp | grep -v nginx | grep -v docker | grep -v sshd | grep -v PM2\")",
+      "Bash(ssh -i \"f:\\\\whc\\\\code_project\\\\19981023wang.pem\" root@43.134.57.90 \"cd /opt/dc-visualizer && sed -i \"\"s|base: ''/dc'',||\"\" apps/web/vite.config.ts && sed -i ''/^export default defineConfig/,/plugins:/{s|plugins:|base: \"\"/dc/\"\",\\\\n  plugins:|}'' apps/web/vite.config.ts && head -12 apps/web/vite.config.ts\")",
+      "Bash(pnpm --filter @dc-visualizer/api add @nestjs/throttler)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\wangh\\.claude"
     ]
   }
 }

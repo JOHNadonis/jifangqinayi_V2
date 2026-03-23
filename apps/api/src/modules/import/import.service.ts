@@ -228,7 +228,7 @@ export class ImportService {
   }
 
   // 导入机柜
-  async importRacks(buffer: Buffer): Promise<ImportResultDto> {
+  async importRacks(buffer: Buffer, projectId: string): Promise<ImportResultDto> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
 
@@ -259,7 +259,7 @@ export class ImportService {
     });
 
     // 获取所有机房
-    const rooms = await this.prisma.room.findMany();
+    const rooms = await this.prisma.room.findMany({ where: { projectId } });
     const roomMap = new Map(rooms.map(r => [r.name, r.id]));
 
     for (const row of rows) {
@@ -291,6 +291,7 @@ export class ImportService {
             column: row.column,
             location: row.location,
             description: row.description,
+            projectId,
           },
         });
         result.success++;
@@ -304,7 +305,7 @@ export class ImportService {
   }
 
   // 导入设备模板
-  async importTemplates(buffer: Buffer): Promise<ImportResultDto> {
+  async importTemplates(buffer: Buffer, projectId: string): Promise<ImportResultDto> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
 
@@ -351,7 +352,7 @@ export class ImportService {
 
         // 检查是否已存在
         const existing = await this.prisma.deviceTemplate.findFirst({
-          where: { brand: row.brand, model: row.model },
+          where: { brand: row.brand, model: row.model, projectId },
         });
         if (existing) {
           result.errors.push(`第${row.rowNumber}行：模板"${row.brand} ${row.model}"已存在`);
@@ -366,6 +367,7 @@ export class ImportService {
             deviceType: row.deviceType,
             sizeU: row.sizeU,
             isPublic: true,
+            projectId,
           },
         });
         result.success++;
@@ -379,7 +381,7 @@ export class ImportService {
   }
 
   // 导入设备
-  async importDevices(buffer: Buffer): Promise<ImportResultDto> {
+  async importDevices(buffer: Buffer, projectId: string): Promise<ImportResultDto> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as any);
 
@@ -426,10 +428,10 @@ export class ImportService {
     });
 
     // 获取所有模板和机柜
-    const templates = await this.prisma.deviceTemplate.findMany();
+    const templates = await this.prisma.deviceTemplate.findMany({ where: { projectId } });
     const templateMap = new Map(templates.map(t => [`${t.brand}|${t.model}`, t]));
 
-    const racks = await this.prisma.rack.findMany();
+    const racks = await this.prisma.rack.findMany({ where: { projectId } });
     const rackMap = new Map(racks.map(r => [r.name, r.id]));
 
     for (const row of rows) {
@@ -471,6 +473,7 @@ export class ImportService {
             status: row.status,
             assetTag: row.assetTag,
             notes: row.notes,
+            projectId,
           },
         });
         result.success++;

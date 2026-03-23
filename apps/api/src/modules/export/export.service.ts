@@ -7,31 +7,31 @@ export class ExportService {
   constructor(private prisma: PrismaService) {}
 
   // 导出所有数据为 Excel
-  async exportAllToExcel(): Promise<Buffer> {
+  async exportAllToExcel(projectId: string): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'DC-Visualizer';
     workbook.created = new Date();
 
     // 1. 机房数据
-    await this.addRoomsSheet(workbook);
+    await this.addRoomsSheet(workbook, projectId);
 
     // 2. 机柜数据
-    await this.addRacksSheet(workbook);
+    await this.addRacksSheet(workbook, projectId);
 
     // 3. 设备模板数据
-    await this.addTemplatesSheet(workbook);
+    await this.addTemplatesSheet(workbook, projectId);
 
     // 4. 设备数据
-    await this.addDevicesSheet(workbook);
+    await this.addDevicesSheet(workbook, projectId);
 
     // 5. 连线数据
-    await this.addCablesSheet(workbook);
+    await this.addCablesSheet(workbook, projectId);
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
   }
 
-  private async addRoomsSheet(workbook: ExcelJS.Workbook) {
+  private async addRoomsSheet(workbook: ExcelJS.Workbook, projectId: string) {
     const sheet = workbook.addWorksheet('机房列表');
 
     sheet.columns = [
@@ -44,9 +44,8 @@ export class ExportService {
     ];
 
     const rooms = await this.prisma.room.findMany({
-      include: {
-        _count: { select: { racks: true } },
-      },
+      where: { projectId },
+      include: { _count: { select: { racks: true } } },
     });
 
     rooms.forEach((room) => {
@@ -63,7 +62,7 @@ export class ExportService {
     this.styleHeader(sheet);
   }
 
-  private async addRacksSheet(workbook: ExcelJS.Workbook) {
+  private async addRacksSheet(workbook: ExcelJS.Workbook, projectId: string) {
     const sheet = workbook.addWorksheet('机柜列表');
 
     sheet.columns = [
@@ -78,10 +77,8 @@ export class ExportService {
     ];
 
     const racks = await this.prisma.rack.findMany({
-      include: {
-        room: true,
-        _count: { select: { devices: true } },
-      },
+      where: { projectId },
+      include: { room: true, _count: { select: { devices: true } } },
     });
 
     racks.forEach((rack) => {
@@ -100,7 +97,7 @@ export class ExportService {
     this.styleHeader(sheet);
   }
 
-  private async addTemplatesSheet(workbook: ExcelJS.Workbook) {
+  private async addTemplatesSheet(workbook: ExcelJS.Workbook, projectId: string) {
     const sheet = workbook.addWorksheet('设备模板');
 
     sheet.columns = [
@@ -114,9 +111,8 @@ export class ExportService {
     ];
 
     const templates = await this.prisma.deviceTemplate.findMany({
-      include: {
-        _count: { select: { devices: true } },
-      },
+      where: { projectId },
+      include: { _count: { select: { devices: true } } },
     });
 
     const deviceTypeMap: Record<string, string> = {
@@ -144,7 +140,7 @@ export class ExportService {
     this.styleHeader(sheet);
   }
 
-  private async addDevicesSheet(workbook: ExcelJS.Workbook) {
+  private async addDevicesSheet(workbook: ExcelJS.Workbook, projectId: string) {
     const sheet = workbook.addWorksheet('设备列表');
 
     sheet.columns = [
@@ -163,17 +159,11 @@ export class ExportService {
     ];
 
     const devices = await this.prisma.device.findMany({
+      where: { projectId },
       include: {
         template: true,
-        rack: {
-          include: { room: true },
-        },
-        _count: {
-          select: {
-            cablesFrom: true,
-            cablesTo: true,
-          },
-        },
+        rack: { include: { room: true } },
+        _count: { select: { cablesFrom: true, cablesTo: true } },
       },
     });
 
@@ -214,7 +204,7 @@ export class ExportService {
     this.styleHeader(sheet);
   }
 
-  private async addCablesSheet(workbook: ExcelJS.Workbook) {
+  private async addCablesSheet(workbook: ExcelJS.Workbook, projectId: string) {
     const sheet = workbook.addWorksheet('连线列表');
 
     sheet.columns = [
@@ -232,13 +222,10 @@ export class ExportService {
     ];
 
     const cables = await this.prisma.cable.findMany({
+      where: { projectId },
       include: {
-        srcDevice: {
-          include: { rack: true },
-        },
-        dstDevice: {
-          include: { rack: true },
-        },
+        srcDevice: { include: { rack: true } },
+        dstDevice: { include: { rack: true } },
       },
     });
 
@@ -301,7 +288,7 @@ export class ExportService {
   }
 
   // 导出标签数据
-  async exportLabels(cableIds?: string[]): Promise<Buffer> {
+  async exportLabels(projectId: string, cableIds?: string[]): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('线缆标签');
 
@@ -317,7 +304,7 @@ export class ExportService {
       { header: '颜色', key: 'color', width: 10 },
     ];
 
-    const where = cableIds ? { id: { in: cableIds } } : {};
+    const where = cableIds ? { projectId, id: { in: cableIds } } : { projectId };
 
     const cables = await this.prisma.cable.findMany({
       where,

@@ -11,9 +11,12 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().token;
+    const { token, currentProject } = useAuthStore.getState();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (currentProject) {
+      config.headers['X-Project-Id'] = currentProject.id;
     }
     return config;
   },
@@ -54,6 +57,7 @@ export interface PaginatedResponse<T> {
 
 export const authApi = {
   login: (data: { username: string; password: string }) => post('/auth/login', data),
+  register: (data: { username: string; password: string; name: string }) => post('/auth/register', data),
   getProfile: () => get('/auth/profile'),
 };
 
@@ -156,4 +160,22 @@ export const importApi = {
 export const syncApi = {
   push: (actions: unknown[]) => post('/sync/push', actions),
   pull: (lastSyncTime: number) => get('/sync/pull', { params: { lastSyncTime } }),
+};
+
+export const projectsApi = {
+  list: () => get('/projects'),
+  get: (id: string) => get(`/projects/${id}`),
+  create: (data: { name: string; description?: string }) => post('/projects', data),
+  update: (id: string, data: { name?: string; description?: string }) => patch(`/projects/${id}`, data),
+  delete: (id: string) => del(`/projects/${id}`),
+  joinByCode: (inviteCode: string) => post('/projects/join-by-code', { inviteCode }),
+  search: (q: string) => get('/projects/search', { params: { q } }),
+  getMembers: (id: string) => get(`/projects/${id}/members`),
+  removeMember: (id: string, userId: string) => del(`/projects/${id}/members/${userId}`),
+  regenerateCode: (id: string) => post(`/projects/${id}/regenerate-code`),
+};
+
+export const logsApi = {
+  getActivity: (params?: Record<string, unknown>) => get('/logs/activity', { params }),
+  getErrors: (params?: Record<string, unknown>) => get('/logs/errors', { params }),
 };

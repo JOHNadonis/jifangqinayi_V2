@@ -2,13 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { ErrorLogService } from './modules/logs/error-log.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 启用 CORS
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: true,
     credentials: true,
   });
 
@@ -20,18 +22,20 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
+      forbidNonWhitelisted: false,
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  // 全局异常过滤器
+  const errorLogService = app.get(ErrorLogService);
+  app.useGlobalFilters(new AllExceptionsFilter(errorLogService));
 
   // Swagger 文档
   const config = new DocumentBuilder()
     .setTitle('DC-Visualizer API')
     .setDescription('机房搬迁可视化管理系统 API 文档')
-    .setVersion('1.0')
+    .setVersion('2.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);

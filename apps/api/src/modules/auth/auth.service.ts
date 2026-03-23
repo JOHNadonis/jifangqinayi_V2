@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -42,6 +43,24 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
+    };
+  }
+
+  async register(registerDto: RegisterDto) {
+    const existing = await this.usersService.findByUsername(registerDto.username);
+    if (existing) {
+      throw new ConflictException('用户名已存在');
+    }
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const user = await this.usersService.create({
+      username: registerDto.username,
+      password: hashedPassword,
+      name: registerDto.name,
+    });
+    const payload = { sub: user.id, username: user.username, role: user.role };
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user: { id: user.id, username: user.username, name: user.name, role: user.role },
     };
   }
 

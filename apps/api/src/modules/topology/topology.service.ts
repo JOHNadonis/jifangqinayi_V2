@@ -45,14 +45,9 @@ export class TopologyService {
     }
   }
 
-  async getTopologyByRoom(roomId: string): Promise<{ nodes: TopologyNode[]; edges: TopologyEdge[]; summary: any }> {
-    // 获取机房内所有设备
+  async getTopologyByRoom(roomId: string, projectId: string): Promise<{ nodes: TopologyNode[]; edges: TopologyEdge[]; summary: any }> {
     const devices = await this.prisma.device.findMany({
-      where: {
-        rack: {
-          roomId,
-        },
-      },
+      where: { projectId, rack: { roomId } },
       include: {
         template: true,
         rack: true,
@@ -131,9 +126,9 @@ export class TopologyService {
     };
   }
 
-  async getDeviceConnections(deviceId: string): Promise<{ centerNode: TopologyNode; connectedNodes: TopologyNode[]; edges: TopologyEdge[] } | null> {
-    const device = await this.prisma.device.findUnique({
-      where: { id: deviceId },
+  async getDeviceConnections(deviceId: string, projectId: string): Promise<{ centerNode: TopologyNode; connectedNodes: TopologyNode[]; edges: TopologyEdge[] } | null> {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, projectId },
       include: {
         template: true,
         rack: true,

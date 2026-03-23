@@ -11,25 +11,92 @@ datasource db {
 }
 
 // ==================== 用户管理 ====================
-// Role: ADMIN, USER
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  name      String?
-  role      String   @default("USER")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String          @id @default(uuid())
+  username       String          @unique
+  password       String
+  name           String?
+  role           String          @default("USER")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  projectMembers ProjectMember[]
 
   @@map("users")
 }
 
+// ==================== 项目管理 ====================
+
+model Project {
+  id           String          @id @default(uuid())
+  name         String
+  description  String?
+  inviteCode   String          @unique @map("invite_code")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  members      ProjectMember[]
+  rooms        Room[]
+  racks        Rack[]
+  devices      Device[]
+  cables       Cable[]
+  templates    DeviceTemplate[]
+  activityLogs ActivityLog[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  userId    String   @map("user_id")
+  role      String   @default("MEMBER")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ==================== 操作日志 ====================
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  projectId  String   @map("project_id")
+  userId     String   @map("user_id")
+  username   String
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  entityName String?  @map("entity_name")
+  before     String?
+  after      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model ErrorLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  username   String?
+  method     String
+  path       String
+  statusCode Int      @map("status_code")
+  message    String
+  stack      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("error_logs")
+}
+
 // ==================== 机房管理 ====================
-// RoomType: OLD, NEW
 
 model Room {
   id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name        String
   location    String
   type        String   @default("OLD")
@@ -45,6 +112,8 @@ model Room {
 
 model Rack {
   id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name        String
   roomId      String   @map("room_id")
   room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -61,10 +130,11 @@ model Rack {
 }
 
 // ==================== 设备模板 ====================
-// DeviceType: SERVER, SWITCH, ROUTER, FIREWALL, STORAGE, PDU, OTHER
 
 model DeviceTemplate {
   id         String   @id @default(uuid())
+  projectId  String   @map("project_id")
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   brand      String
   model      String
   sizeU      Int      @map("size_u")
@@ -77,38 +147,38 @@ model DeviceTemplate {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  @@unique([brand, model])
   @@map("device_templates")
 }
 
 // ==================== 设备管理 ====================
-// DeviceStatus: ONLINE, MOVING, OFFLINE, ARRIVED
 
 model Device {
-  id         String          @id @default(uuid())
+  id         String         @id @default(uuid())
+  projectId  String         @map("project_id")
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name       String
-  assetTag   String?         @unique @map("asset_tag")
-  templateId String          @map("template_id")
-  template   DeviceTemplate  @relation(fields: [templateId], references: [id])
-  rackId     String?         @map("rack_id")
-  rack       Rack?           @relation(fields: [rackId], references: [id], onDelete: SetNull)
-  positionU  Int?            @map("position_u")
-  status     String          @default("ONLINE")
+  assetTag   String?        @map("asset_tag")
+  templateId String         @map("template_id")
+  template   DeviceTemplate @relation(fields: [templateId], references: [id])
+  rackId     String?        @map("rack_id")
+  rack       Rack?          @relation(fields: [rackId], references: [id], onDelete: SetNull)
+  positionU  Int?           @map("position_u")
+  status     String         @default("ONLINE")
   notes      String?
-  cablesFrom Cable[]         @relation("CableSource")
-  cablesTo   Cable[]         @relation("CableDestination")
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
+  cablesFrom Cable[]        @relation("CableSource")
+  cablesTo   Cable[]        @relation("CableDestination")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
 
   @@map("devices")
 }
 
 // ==================== 连线管理 ====================
-// CableType: FIBER, CAT6, CAT5E, POWER, OTHER
-// CableStatus: RECORDED, LABELED, DISCONNECTED, VERIFIED
 
 model Cable {
   id           String   @id @default(uuid())
+  projectId    String   @map("project_id")
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   traceCode    String   @unique @map("trace_code")
   srcDeviceId  String   @map("src_device_id")
   srcDevice    Device   @relation("CableSource", fields: [srcDeviceId], references: [id], onDelete: Cascade)

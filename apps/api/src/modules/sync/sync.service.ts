@@ -30,7 +30,7 @@ export interface SyncConflict {
 export class SyncService {
   constructor(private prisma: PrismaService) {}
 
-  async syncFromClient(actions: SyncAction[]): Promise<SyncResult> {
+  async syncFromClient(actions: SyncAction[], projectId: string): Promise<SyncResult> {
     const result: SyncResult = {
       success: true,
       syncedCount: 0,
@@ -43,7 +43,7 @@ export class SyncService {
 
     for (const action of sortedActions) {
       try {
-        await this.processAction(action);
+        await this.processAction(action, projectId);
         result.syncedCount++;
 
         // 记录同步日志
@@ -72,13 +72,13 @@ export class SyncService {
     return result;
   }
 
-  private async processAction(action: SyncAction) {
+  private async processAction(action: SyncAction, projectId: string) {
     switch (action.entityType) {
       case 'cable':
-        await this.syncCable(action);
+        await this.syncCable(action, projectId);
         break;
       case 'device':
-        await this.syncDevice(action);
+        await this.syncDevice(action, projectId);
         break;
       case 'rack':
         await this.syncRack(action);
@@ -91,7 +91,7 @@ export class SyncService {
     }
   }
 
-  private async syncCable(action: SyncAction) {
+  private async syncCable(action: SyncAction, projectId: string) {
     const { actionType, data } = action;
 
     switch (actionType) {
@@ -116,6 +116,7 @@ export class SyncService {
             purpose: data.purpose,
             photoUrl: data.photoUrl,
             status: data.status || 'RECORDED',
+            projectId,
           },
         });
         break;
@@ -152,7 +153,7 @@ export class SyncService {
     }
   }
 
-  private async syncDevice(action: SyncAction) {
+  private async syncDevice(action: SyncAction, projectId: string) {
     const { actionType, data } = action;
 
     switch (actionType) {
@@ -193,30 +194,30 @@ export class SyncService {
   }
 
   // 获取客户端需要同步的数据（增量同步）
-  async getUpdatesForClient(clientId: string, lastSyncTime: number) {
+  async getUpdatesForClient(clientId: string, lastSyncTime: number, projectId: string) {
     const since = new Date(lastSyncTime);
 
     const [devices, cables, racks, rooms] = await Promise.all([
       this.prisma.device.findMany({
-        where: { updatedAt: { gt: since } },
+        where: { projectId, updatedAt: { gt: since } },
         include: {
           template: true,
           rack: { include: { room: true } },
         },
       }),
       this.prisma.cable.findMany({
-        where: { updatedAt: { gt: since } },
+        where: { projectId, updatedAt: { gt: since } },
         include: {
           srcDevice: { include: { rack: true } },
           dstDevice: { include: { rack: true } },
         },
       }),
       this.prisma.rack.findMany({
-        where: { updatedAt: { gt: since } },
+        where: { projectId, updatedAt: { gt: since } },
         include: { room: true },
       }),
       this.prisma.room.findMany({
-        where: { updatedAt: { gt: since } },
+        where: { projectId, updatedAt: { gt: since } },
       }),
     ]);
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Button, theme } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Tag, theme } from 'antd';
 import {
   DashboardOutlined,
   HomeOutlined,
@@ -15,28 +15,35 @@ import {
   LogoutOutlined,
   DownloadOutlined,
   MobileOutlined,
+  SwapOutlined,
+  FileTextOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../stores/authStore';
 import { exportApi } from '../services/api';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-  { key: '/rooms', icon: <HomeOutlined />, label: '机房管理' },
-  { key: '/racks', icon: <AppstoreOutlined />, label: '机柜管理' },
-  { key: '/templates', icon: <DatabaseOutlined />, label: '设备模板' },
-  { key: '/devices', icon: <HddOutlined />, label: '设备管理' },
-  { key: '/cables', icon: <LinkOutlined />, label: '连线管理' },
-  { key: '/topology', icon: <ApartmentOutlined />, label: '拓扑图' },
-];
-
 export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, currentProject, logout, setCurrentProject } = useAuthStore();
   const { token: themeToken } = theme.useToken();
+
+  const isAdmin = currentProject?.role === 'ADMIN';
+
+  const menuItems = [
+    { key: '/dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
+    { key: '/rooms', icon: <HomeOutlined />, label: '机房管理' },
+    { key: '/racks', icon: <AppstoreOutlined />, label: '机柜管理' },
+    { key: '/templates', icon: <DatabaseOutlined />, label: '设备模板' },
+    { key: '/devices', icon: <HddOutlined />, label: '设备管理' },
+    { key: '/cables', icon: <LinkOutlined />, label: '连线管理' },
+    { key: '/topology', icon: <ApartmentOutlined />, label: '拓扑图' },
+    { key: '/logs', icon: <FileTextOutlined />, label: '操作日志' },
+    ...(isAdmin ? [{ key: '/project-settings', icon: <SettingOutlined />, label: '项目设置' }] : []),
+  ];
 
   const handleMenuClick = (e: any) => {
     navigate(e.key);
@@ -64,6 +71,15 @@ export default function MainLayout() {
       key: 'profile',
       icon: <UserOutlined />,
       label: user?.name || user?.username,
+    },
+    {
+      key: 'switch-project',
+      icon: <SwapOutlined />,
+      label: '切换项目',
+      onClick: () => {
+        setCurrentProject(null);
+        navigate('/projects');
+      },
     },
     {
       key: 'mobile',
@@ -96,9 +112,7 @@ export default function MainLayout() {
         collapsible
         collapsed={collapsed}
         theme="light"
-        style={{
-          boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
-        }}
+        style={{ boxShadow: '2px 0 8px rgba(0,0,0,0.1)' }}
       >
         <div
           style={{
@@ -107,6 +121,7 @@ export default function MainLayout() {
             alignItems: 'center',
             justifyContent: 'center',
             borderBottom: '1px solid #f0f0f0',
+            padding: '0 8px',
           }}
         >
           <h1
@@ -116,6 +131,8 @@ export default function MainLayout() {
               fontWeight: 600,
               color: themeToken.colorPrimary,
               whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
             {collapsed ? 'DC' : 'DC-Visualizer'}
@@ -140,11 +157,21 @@ export default function MainLayout() {
             boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
           }}
         >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+            />
+            {currentProject && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 500, color: '#333' }}>{currentProject.name}</span>
+                <Tag color={isAdmin ? 'blue' : 'default'} style={{ margin: 0 }}>
+                  {isAdmin ? '管理员' : '成员'}
+                </Tag>
+              </div>
+            )}
+          </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar icon={<UserOutlined />} />
