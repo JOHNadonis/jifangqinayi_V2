@@ -144,6 +144,9 @@ export class ImportService {
       { header: '型号*', key: 'model', width: 25 },
       { header: '设备类型*', key: 'deviceType', width: 20 },
       { header: 'U高度*', key: 'sizeU', width: 10 },
+      { header: '前面板端口配置', key: 'frontPorts', width: 40 },
+      { header: '后面板端口配置', key: 'rearPorts', width: 40 },
+      { header: '是否公开', key: 'isPublic', width: 12 },
     ];
 
     // 添加示例数据
@@ -152,12 +155,18 @@ export class ImportService {
       model: 'PowerEdge R750',
       deviceType: '服务器',
       sizeU: 2,
+      frontPorts: 'nic1:以太网,nic2:以太网,ilo:管理口',
+      rearPorts: 'psu1:电源,psu2:电源',
+      isPublic: '是',
     });
     sheet.addRow({
       brand: 'Cisco',
       model: 'Nexus 9336C-FX2',
       deviceType: '交换机',
       sizeU: 1,
+      frontPorts: 'ge1:GE,ge2:GE,ge3:GE,ge4:GE,sfp1:SFP+,sfp2:SFP+',
+      rearPorts: 'mgmt:管理口,console:控制台',
+      isPublic: '是',
     });
 
     this.styleTemplate(sheet);
@@ -166,7 +175,9 @@ export class ImportService {
       '1. 带 * 的列为必填项',
       '2. 设备类型可选值：服务器、交换机、路由器、防火墙、存储、配电单元、其他',
       '3. U高度为设备占用的机柜U位数量，一般为1-4',
-      '4. 请删除示例数据后再导入',
+      '4. 端口配置格式：端口名:端口类型，多个端口用英文逗号分隔，例如：nic1:以太网,nic2:以太网',
+      '5. 是否公开填写"是"或"否"，默认为"是"',
+      '6. 请删除示例数据后再导入',
     ]);
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -323,17 +334,33 @@ export class ImportService {
       const values = row.values as any[];
       if (!values || values.length < 4) return;
 
-      // 使用安全的单元格值获取方法
       const rawDeviceType = this.getCellStringValue(values[3]);
       const deviceType = this.normalizeDeviceType(rawDeviceType);
+
+      // 解析端口配置字符串 "nic1:以太网,nic2:以太网" → [{name, type}]
+      const parsePorts = (raw: string) => {
+        if (!raw) return [];
+        return raw.split(',').map(s => s.trim()).filter(Boolean).map(s => {
+          const [name, portType] = s.split(':').map(p => p.trim());
+          return { name: name || s, type: portType || '' };
+        });
+      };
+
+      const frontPortsRaw = this.getCellStringValue(values[5]);
+      const rearPortsRaw = this.getCellStringValue(values[6]);
+      const isPublicRaw = this.getCellStringValue(values[7]);
 
       rows.push({
         rowNumber,
         brand: this.getCellStringValue(values[1]),
         model: this.getCellStringValue(values[2]),
         deviceType,
-        rawDeviceType, // 保留原始值用于日志
         sizeU: parseInt(this.getCellStringValue(values[4])) || 1,
+        portLayout: {
+          front: parsePorts(frontPortsRaw),
+          rear: parsePorts(rearPortsRaw),
+        },
+        isPublic: isPublicRaw !== '否',
       });
     });
 
@@ -366,7 +393,8 @@ export class ImportService {
             model: row.model,
             deviceType: row.deviceType,
             sizeU: row.sizeU,
-            isPublic: true,
+            portLayout: JSON.stringify(row.portLayout),
+            isPublic: row.isPublic,
             projectId,
           },
         });
