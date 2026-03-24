@@ -32,9 +32,15 @@ export class ProjectsController {
   }
 
   @Post('join-by-code')
-  @ApiOperation({ summary: '通过邀请码加入项目' })
+  @ApiOperation({ summary: '通过邀请码申请加入项目' })
   joinByCode(@Request() req: any, @Body('inviteCode') inviteCode: string) {
     return this.projectsService.joinByCode(req.user.sub, inviteCode);
+  }
+
+  @Post(':id/apply')
+  @ApiOperation({ summary: '申请加入项目' })
+  applyToJoin(@Request() req: any, @Param('id') id: string) {
+    return this.projectsService.applyToJoin(req.user.sub, id);
   }
 
   @Get(':id')
@@ -59,6 +65,35 @@ export class ProjectsController {
   @ApiOperation({ summary: '成员列表' })
   getMembers(@Request() req: any, @Param('id') id: string) {
     return this.projectsService.getMembers(id, req.user.sub);
+  }
+
+  @Get(':id/pending')
+  @ApiOperation({ summary: '待审批申请列表' })
+  getPendingRequests(@Request() req: any, @Param('id') id: string) {
+    return this.projectsService.getPendingRequests(id, req.user.sub);
+  }
+
+  @Post(':id/members/:userId/approve')
+  @ApiOperation({ summary: '审批通过' })
+  approveRequest(@Request() req: any, @Param('id') id: string, @Param('userId') userId: string) {
+    return this.projectsService.approveRequest(id, userId, req.user.sub);
+  }
+
+  @Post(':id/members/:userId/reject')
+  @ApiOperation({ summary: '审批拒绝' })
+  rejectRequest(@Request() req: any, @Param('id') id: string, @Param('userId') userId: string) {
+    return this.projectsService.rejectRequest(id, userId, req.user.sub);
+  }
+
+  @Patch(':id/members/:userId/role')
+  @ApiOperation({ summary: '更新成员角色' })
+  updateMemberRole(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body('role') role: string,
+  ) {
+    return this.projectsService.updateMemberRole(id, userId, role, req.user.sub);
   }
 
   @Delete(':id/members/:userId')

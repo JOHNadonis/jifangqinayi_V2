@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Card, Button, Input, List, Tag, Modal, Form, message, Tabs, Empty, Spin
 } from 'antd';
-import { PlusOutlined, SearchOutlined, TeamOutlined, KeyOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined, TeamOutlined, KeyOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../stores/authStore';
 import { projectsApi } from '../services/api';
 
@@ -14,6 +14,9 @@ interface Project {
   inviteCode: string;
   role: 'ADMIN' | 'MEMBER';
   memberCount?: number;
+  _count?: { members: number };
+  isMember?: boolean;
+  isPending?: boolean;
 }
 
 export default function ProjectSelect() {
@@ -79,14 +82,27 @@ export default function ProjectSelect() {
 
   const handleJoin = async (values: { inviteCode: string }) => {
     try {
-      const project: any = await projectsApi.joinByCode(values.inviteCode);
-      message.success('加入项目成功');
+      const result: any = await projectsApi.joinByCode(values.inviteCode);
+      message.success(result.message || '申请已提交');
       setJoinOpen(false);
       joinForm.resetFields();
-      setCurrentProject({ id: project.id, name: project.name, role: project.role });
-      navigate('/dashboard');
+      // 不再直接进入项目，需要等待审批
+      loadMyProjects();
     } catch (error: any) {
       message.error(error.message || '加入失败，请检查邀请码');
+    }
+  };
+
+  const handleApply = async (project: any) => {
+    try {
+      const result: any = await projectsApi.applyToJoin(project.id);
+      message.success(result.message || '申请已提交，请等待管理员审批');
+      // 刷新搜索结果
+      if (searchQ) {
+        handleSearch(searchQ);
+      }
+    } catch (error: any) {
+      message.error(error.message || '申请失败');
     }
   };
 
@@ -173,21 +189,16 @@ export default function ProjectSelect() {
                       renderItem={(project: any) => (
                         <List.Item
                           actions={[
-                            project.role ? (
+                            project.isMember ? (
                               <Button type="primary" size="small" onClick={() => handleSelect(project)}>
                                 进入
                               </Button>
+                            ) : project.isPending ? (
+                              <Tag icon={<ClockCircleOutlined />} color="orange">
+                                待审批
+                              </Tag>
                             ) : (
-                              <Button size="small" onClick={async () => {
-                                try {
-                                  const joined: any = await projectsApi.joinByCode(project.inviteCode);
-                                  message.success('加入成功');
-                                  setCurrentProject({ id: joined.id, name: joined.name, role: joined.role });
-                                  navigate('/dashboard');
-                                } catch (e: any) {
-                                  message.error(e.message || '加入失败');
-                                }
-                              }}>
+                              <Button size="small" onClick={() => handleApply(project)}>
                                 申请加入
                               </Button>
                             ),
@@ -195,7 +206,14 @@ export default function ProjectSelect() {
                         >
                           <List.Item.Meta
                             avatar={<TeamOutlined style={{ fontSize: 24, color: '#667eea' }} />}
-                            title={project.name}
+                            title={
+                              <span>
+                                {project.name}
+                                <Tag style={{ marginLeft: 8 }}>
+                                  {project._count?.members || 0} 人
+                                </Tag>
+                              </span>
+                            }
                             description={project.description || '暂无描述'}
                           />
                         </List.Item>
@@ -229,7 +247,7 @@ export default function ProjectSelect() {
             <Input placeholder="6位邀请码，例：DEMO01" style={{ textTransform: 'uppercase' }} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>加入</Button>
+            <Button type="primary" htmlType="submit" block>提交申请</Button>
           </Form.Item>
         </Form>
       </Modal>

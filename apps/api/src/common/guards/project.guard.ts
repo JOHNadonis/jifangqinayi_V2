@@ -21,6 +21,7 @@ export class ProjectGuard implements CanActivate {
       where: { projectId_userId: { projectId, userId: user.sub } },
     });
     if (!member) throw new ForbiddenException('无权访问此项目');
+    if (member.status !== 'APPROVED') throw new ForbiddenException('您尚未通过项目审批');
 
     request.project = { id: projectId, role: member.role };
     return true;
@@ -47,6 +48,7 @@ export class ProjectAdminGuard implements CanActivate {
       where: { projectId_userId: { projectId, userId: user.sub } },
     });
     if (!member) throw new ForbiddenException('无权访问此项目');
+    if (member.status !== 'APPROVED') throw new ForbiddenException('您尚未通过项目审批');
     if (member.role !== 'ADMIN') throw new ForbiddenException('需要管理员权限');
 
     request.project = { id: projectId, role: member.role };

@@ -16,6 +16,7 @@ import Templates from './pages/Templates';
 import Cables from './pages/Cables';
 import Topology from './pages/Topology';
 import Logs from './pages/Logs';
+import ProjectSettings from './pages/ProjectSettings';
 import MobileHome from './pages/Mobile/Home';
 import MobileScanner from './pages/Mobile/Scanner';
 import MobileRecord from './pages/Mobile/Record';
@@ -72,6 +73,7 @@ function App() {
           <Route path="cables" element={<Cables />} />
           <Route path="topology" element={<Topology />} />
           <Route path="logs" element={<Logs />} />
+          <Route path="project-settings" element={<ProjectSettings />} />
         </Route>
 
         {/* 移动端路由 */}

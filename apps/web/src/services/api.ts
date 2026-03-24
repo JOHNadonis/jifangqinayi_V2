@@ -169,8 +169,13 @@ export const projectsApi = {
   update: (id: string, data: { name?: string; description?: string }) => patch(`/projects/${id}`, data),
   delete: (id: string) => del(`/projects/${id}`),
   joinByCode: (inviteCode: string) => post('/projects/join-by-code', { inviteCode }),
+  applyToJoin: (id: string) => post(`/projects/${id}/apply`),
   search: (q: string) => get('/projects/search', { params: { q } }),
   getMembers: (id: string) => get(`/projects/${id}/members`),
+  getPendingRequests: (id: string) => get(`/projects/${id}/pending`),
+  approveRequest: (id: string, userId: string) => post(`/projects/${id}/members/${userId}/approve`),
+  rejectRequest: (id: string, userId: string) => post(`/projects/${id}/members/${userId}/reject`),
+  updateMemberRole: (id: string, userId: string, role: string) => patch(`/projects/${id}/members/${userId}/role`, { role }),
   removeMember: (id: string, userId: string) => del(`/projects/${id}/members/${userId}`),
   regenerateCode: (id: string) => post(`/projects/${id}/regenerate-code`),
 };
