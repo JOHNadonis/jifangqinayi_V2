@@ -1,9 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button, Divider, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, message } from 'antd';
 import { CheckOutlined, DeleteOutlined, DisconnectOutlined, DownloadOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
+import { Resizable, ResizeCallbackData } from 'react-resizable';
 import { cablesApi, devicesApi, exportApi } from '../services/api';
+
+const ResizableTitle = (props: any) => {
+  const { onResize, width, ...restProps } = props;
+  if (!width) return <th {...restProps} />;
+  return (
+    <Resizable
+      width={width}
+      height={0}
+      handle={<span className="react-resizable-handle" style={{ position: 'absolute', right: -5, bottom: 0, width: 10, height: '100%', cursor: 'col-resize', zIndex: 1 }} onClick={(e) => e.stopPropagation()} />}
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+    >
+      <th {...restProps} />
+    </Resizable>
+  );
+};
 
 interface DeviceTemplate {
   id: string;
@@ -109,9 +126,18 @@ export default function Cables() {
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [query, setQuery] = useState({ page: 1, pageSize: 20, search: '', status: '', cableType: '' });
-  // 用于跟踪选中的设备ID以触发端口列表更新
   const [srcDeviceId, setSrcDeviceId] = useState<string | undefined>();
   const [dstDeviceId, setDstDeviceId] = useState<string | undefined>();
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    traceCode: 180, source: 200, target: 200, cableType: 120, color: 90, purpose: 150, status: 110, action: 210,
+  });
+
+  const handleResize = useCallback(
+    (key: string) => (_: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+      setColWidths((prev) => ({ ...prev, [key]: size.width }));
+    },
+    []
+  );
 
   const { data, loading, refresh } = useRequest<Paged<CableRow>, []>(
     () =>
@@ -214,12 +240,12 @@ export default function Cables() {
     setOpen(true);
   };
 
-  const columns: ColumnsType<CableRow> = [
+  const baseColumns: ColumnsType<CableRow> = [
     {
       title: '追溯码',
       dataIndex: 'traceCode',
       key: 'traceCode',
-      width: 180,
+      width: colWidths.traceCode,
       sorter: (a, b) => a.traceCode.localeCompare(b.traceCode),
       showSorterTooltip: false,
       render: (value: string) => <Tag>{value}</Tag>,
@@ -227,6 +253,7 @@ export default function Cables() {
     {
       title: '源端设备',
       key: 'source',
+      width: colWidths.source,
       sorter: (a, b) => (a.srcDevice?.name ?? '').localeCompare(b.srcDevice?.name ?? ''),
       showSorterTooltip: false,
       render: (_, record) => (
@@ -239,6 +266,7 @@ export default function Cables() {
     {
       title: '目标设备',
       key: 'target',
+      width: colWidths.target,
       sorter: (a, b) => (a.dstDevice?.name ?? '').localeCompare(b.dstDevice?.name ?? ''),
       showSorterTooltip: false,
       render: (_, record) => (
@@ -252,7 +280,7 @@ export default function Cables() {
       title: '线缆类型',
       dataIndex: 'cableType',
       key: 'cableType',
-      width: 110,
+      width: colWidths.cableType,
       sorter: (a, b) => a.cableType.localeCompare(b.cableType),
       showSorterTooltip: false,
       render: (value: string) => cableTypeLabels[value] || value,
@@ -261,7 +289,7 @@ export default function Cables() {
       title: '颜色',
       dataIndex: 'color',
       key: 'color',
-      width: 90,
+      width: colWidths.color,
       sorter: (a, b) => (a.color ?? '').localeCompare(b.color ?? ''),
       showSorterTooltip: false,
     },
@@ -269,6 +297,7 @@ export default function Cables() {
       title: '用途',
       dataIndex: 'purpose',
       key: 'purpose',
+      width: colWidths.purpose,
       ellipsis: true,
       sorter: (a, b) => (a.purpose ?? '').localeCompare(b.purpose ?? ''),
       showSorterTooltip: false,
@@ -277,7 +306,7 @@ export default function Cables() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 110,
+      width: colWidths.status,
       sorter: (a, b) => a.status.localeCompare(b.status),
       showSorterTooltip: false,
       render: (value: string) => (
@@ -287,7 +316,7 @@ export default function Cables() {
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: colWidths.action,
       render: (_, record) => (
         <Space size="small">
           {record.status === 'RECORDED' && (
@@ -314,6 +343,14 @@ export default function Cables() {
       ),
     },
   ];
+
+  const columns = baseColumns.map((col) => ({
+    ...col,
+    onHeaderCell: (column: any) => ({
+      width: column.width,
+      onResize: handleResize(col.key as string),
+    }),
+  }));
 
   return (
     <div>
@@ -360,6 +397,8 @@ export default function Cables() {
         loading={loading}
         columns={columns}
         dataSource={data?.data ?? []}
+        components={{ header: { cell: ResizableTitle } }}
+        scroll={{ x: 'max-content' }}
         rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys as string[]) }}
         pagination={{
           current: query.page,

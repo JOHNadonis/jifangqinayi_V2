@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import {
@@ -15,9 +15,26 @@ import {
   Tag,
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Resizable, ResizeCallbackData } from 'react-resizable';
 import { roomsApi, exportApi } from '@/services/api';
 
 const { Option } = Select;
+
+const ResizableTitle = (props: any) => {
+  const { onResize, width, ...restProps } = props;
+  if (!width) return <th {...restProps} />;
+  return (
+    <Resizable
+      width={width}
+      height={0}
+      handle={<span className="react-resizable-handle" style={{ position: 'absolute', right: -5, bottom: 0, width: 10, height: '100%', cursor: 'col-resize', zIndex: 1 }} onClick={(e) => e.stopPropagation()} />}
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+    >
+      <th {...restProps} />
+    </Resizable>
+  );
+};
 
 interface Room {
   id: string;
@@ -36,6 +53,16 @@ export default function Rooms() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [form] = Form.useForm();
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    name: 200, type: 110, location: 200, createdAt: 180, action: 160,
+  });
+
+  const handleResize = useCallback(
+    (key: string) => (_: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+      setColWidths((prev) => ({ ...prev, [key]: size.width }));
+    },
+    []
+  );
 
   // 获取机房列表
   const { data, loading, run: fetchRooms } = useRequest(
@@ -147,12 +174,12 @@ export default function Rooms() {
     navigate(`/rooms/${record.id}`);
   };
 
-  const columns = [
+  const baseColumns = [
     {
       title: '机房名称',
       dataIndex: 'name',
       key: 'name',
-      width: 200,
+      width: colWidths.name,
       sorter: (a: Room, b: Room) => a.name.localeCompare(b.name),
       showSorterTooltip: false,
     },
@@ -160,7 +187,7 @@ export default function Rooms() {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
+      width: colWidths.type,
       sorter: (a: Room, b: Room) => a.type.localeCompare(b.type),
       showSorterTooltip: false,
       render: (type: string) => (
@@ -173,7 +200,7 @@ export default function Rooms() {
       title: '位置',
       dataIndex: 'location',
       key: 'location',
-      width: 200,
+      width: colWidths.location,
       sorter: (a: Room, b: Room) => (a.location || '').localeCompare(b.location || ''),
       showSorterTooltip: false,
     },
@@ -187,7 +214,7 @@ export default function Rooms() {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 180,
+      width: colWidths.createdAt,
       sorter: (a: Room, b: Room) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       showSorterTooltip: false,
       render: (text: string) => new Date(text).toLocaleString('zh-CN'),
@@ -195,7 +222,7 @@ export default function Rooms() {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: colWidths.action,
       fixed: 'right' as const,
       render: (_: any, record: Room) => (
         <Space size="small">
@@ -234,6 +261,14 @@ export default function Rooms() {
       ),
     },
   ];
+
+  const columns = baseColumns.map((col) => ({
+    ...col,
+    onHeaderCell: (column: any) => ({
+      width: column.width,
+      onResize: handleResize(col.key as string),
+    }),
+  }));
 
   return (
     <div>
@@ -274,6 +309,8 @@ export default function Rooms() {
           dataSource={data?.data || []}
           rowKey="id"
           loading={loading}
+          components={{ header: { cell: ResizableTitle } }}
+          scroll={{ x: 'max-content' }}
           pagination={{
             total: data?.total || 0,
             pageSize: data?.pageSize || 10,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import {
@@ -23,9 +23,26 @@ import {
   UploadOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
+import { Resizable, ResizeCallbackData } from 'react-resizable';
 import { racksApi, roomsApi, importApi, exportApi } from '@/services/api';
 import ImportModal from '@/components/ImportModal';
 import type { ColumnsType } from 'antd/es/table';
+
+const ResizableTitle = (props: any) => {
+  const { onResize, width, ...restProps } = props;
+  if (!width) return <th {...restProps} />;
+  return (
+    <Resizable
+      width={width}
+      height={0}
+      handle={<span className="react-resizable-handle" style={{ position: 'absolute', right: -5, bottom: 0, width: 10, height: '100%', cursor: 'col-resize', zIndex: 1 }} onClick={(e) => e.stopPropagation()} />}
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+    >
+      <th {...restProps} />
+    </Resizable>
+  );
+};
 
 interface Rack {
   id: string;
@@ -62,6 +79,16 @@ const RacksPage: React.FC = () => {
     current: 1,
     pageSize: 10,
   });
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    name: 150, roomName: 150, location: 120, totalU: 100, usedU: 120, usageRate: 120, deviceCount: 110, action: 180,
+  });
+
+  const handleResize = useCallback(
+    (key: string) => (_: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+      setColWidths((prev) => ({ ...prev, [key]: size.width }));
+    },
+    []
+  );
 
   // 获取机柜列表
   const { data: racksData, loading, refresh } = useRequest(
@@ -129,12 +156,12 @@ const RacksPage: React.FC = () => {
     }
   );
 
-  const columns: ColumnsType<Rack> = [
+  const baseColumns: ColumnsType<Rack> = [
     {
       title: '机柜名称',
       dataIndex: 'name',
       key: 'name',
-      width: 150,
+      width: colWidths.name,
       sorter: (a, b) => a.name.localeCompare(b.name),
       showSorterTooltip: false,
     },
@@ -142,7 +169,7 @@ const RacksPage: React.FC = () => {
       title: '所属机房',
       dataIndex: 'roomName',
       key: 'roomName',
-      width: 150,
+      width: colWidths.roomName,
       sorter: (a, b) => (a.roomName || '').localeCompare(b.roomName || ''),
       showSorterTooltip: false,
     },
@@ -150,7 +177,7 @@ const RacksPage: React.FC = () => {
       title: '位置',
       dataIndex: 'location',
       key: 'location',
-      width: 120,
+      width: colWidths.location,
       sorter: (a, b) => (a.location || '').localeCompare(b.location || ''),
       showSorterTooltip: false,
     },
@@ -158,7 +185,7 @@ const RacksPage: React.FC = () => {
       title: 'U位总数',
       dataIndex: 'totalU',
       key: 'totalU',
-      width: 100,
+      width: colWidths.totalU,
       align: 'center',
       sorter: (a, b) => a.totalU - b.totalU,
       showSorterTooltip: false,
@@ -167,7 +194,7 @@ const RacksPage: React.FC = () => {
       title: '已使用U位',
       dataIndex: 'usedU',
       key: 'usedU',
-      width: 120,
+      width: colWidths.usedU,
       align: 'center',
       sorter: (a, b) => a.usedU - b.usedU,
       showSorterTooltip: false,
@@ -180,7 +207,7 @@ const RacksPage: React.FC = () => {
     {
       title: '使用率',
       key: 'usageRate',
-      width: 120,
+      width: colWidths.usageRate,
       align: 'center',
       sorter: (a, b) => (a.usedU / a.totalU) - (b.usedU / b.totalU),
       showSorterTooltip: false,
@@ -197,7 +224,7 @@ const RacksPage: React.FC = () => {
       title: '设备数量',
       dataIndex: 'deviceCount',
       key: 'deviceCount',
-      width: 100,
+      width: colWidths.deviceCount,
       align: 'center',
       sorter: (a, b) => a.deviceCount - b.deviceCount,
       showSorterTooltip: false,
@@ -212,7 +239,7 @@ const RacksPage: React.FC = () => {
       title: '操作',
       key: 'action',
       fixed: 'right',
-      width: 180,
+      width: colWidths.action,
       render: (_, record: Rack) => (
         <Space size="small">
           <Button
@@ -251,6 +278,14 @@ const RacksPage: React.FC = () => {
       ),
     },
   ];
+
+  const columns = baseColumns.map((col) => ({
+    ...col,
+    onHeaderCell: (column: any) => ({
+      width: column.width,
+      onResize: handleResize(col.key as string),
+    }),
+  }));
 
   const handleEdit = (record: Rack) => {
     setEditingRack(record);
@@ -362,6 +397,7 @@ const RacksPage: React.FC = () => {
           dataSource={racksData?.data || []}
           rowKey="id"
           loading={loading}
+          components={{ header: { cell: ResizableTitle } }}
           pagination={{
             ...pagination,
             total: racksData?.total || 0,

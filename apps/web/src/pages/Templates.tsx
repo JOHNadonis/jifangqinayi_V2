@@ -1,8 +1,25 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Tag, Popconfirm, message, Card, Tabs, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined, MinusCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
+import { Resizable, ResizeCallbackData } from 'react-resizable';
 import { templatesApi, importApi, exportApi } from '../services/api';
+
+const ResizableTitle = (props: any) => {
+  const { onResize, width, ...restProps } = props;
+  if (!width) return <th {...restProps} />;
+  return (
+    <Resizable
+      width={width}
+      height={0}
+      handle={<span className="react-resizable-handle" style={{ position: 'absolute', right: -5, bottom: 0, width: 10, height: '100%', cursor: 'col-resize', zIndex: 1 }} onClick={(e) => e.stopPropagation()} />}
+      onResize={onResize}
+      draggableOpts={{ enableUserSelectHack: false }}
+    >
+      <th {...restProps} />
+    </Resizable>
+  );
+};
 import ImportModal from '../components/ImportModal';
 
 const deviceTypes = [
@@ -35,6 +52,16 @@ export default function Templates() {
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [form] = Form.useForm();
   const [query, setQuery] = useState({ page: 1, pageSize: 20, search: '', deviceType: '' });
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    brand: 120, model: 200, deviceType: 110, sizeU: 90, portCount: 90, isPublic: 90, useCount: 110, action: 150,
+  });
+
+  const handleResize = useCallback(
+    (key: string) => (_: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+      setColWidths((prev) => ({ ...prev, [key]: size.width }));
+    },
+    []
+  );
 
   const { data, loading, refresh } = useRequest(
     () => {
@@ -230,25 +257,28 @@ export default function Templates() {
     setModalOpen(true);
   };
 
-  const columns = [
+  const baseColumns = [
     {
       title: '品牌',
       dataIndex: 'brand',
-      width: 120,
+      key: 'brand',
+      width: colWidths.brand,
       sorter: (a: any, b: any) => (a.brand || '').localeCompare(b.brand || ''),
       showSorterTooltip: false,
     },
     {
       title: '型号',
       dataIndex: 'model',
-      width: 200,
+      key: 'model',
+      width: colWidths.model,
       sorter: (a: any, b: any) => (a.model || '').localeCompare(b.model || ''),
       showSorterTooltip: false,
     },
     {
       title: '设备类型',
       dataIndex: 'deviceType',
-      width: 100,
+      key: 'deviceType',
+      width: colWidths.deviceType,
       sorter: (a: any, b: any) => (a.deviceType || '').localeCompare(b.deviceType || ''),
       showSorterTooltip: false,
       render: (type: string) => {
@@ -259,14 +289,16 @@ export default function Templates() {
     {
       title: 'U高度',
       dataIndex: 'sizeU',
-      width: 80,
+      key: 'sizeU',
+      width: colWidths.sizeU,
       sorter: (a: any, b: any) => (a.sizeU || 0) - (b.sizeU || 0),
       showSorterTooltip: false,
     },
     {
       title: '端口数',
       dataIndex: 'portLayout',
-      width: 80,
+      key: 'portCount',
+      width: colWidths.portCount,
       sorter: (a: any, b: any) => {
         const countA = (a.portLayout?.front?.length || 0) + (a.portLayout?.rear?.length || 0);
         const countB = (b.portLayout?.front?.length || 0) + (b.portLayout?.rear?.length || 0);
@@ -278,7 +310,8 @@ export default function Templates() {
     {
       title: '公开',
       dataIndex: 'isPublic',
-      width: 80,
+      key: 'isPublic',
+      width: colWidths.isPublic,
       sorter: (a: any, b: any) => Number(a.isPublic || false) - Number(b.isPublic || false),
       showSorterTooltip: false,
       render: (v: boolean) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
@@ -286,14 +319,16 @@ export default function Templates() {
     {
       title: '使用数量',
       dataIndex: '_count',
-      width: 100,
+      key: 'useCount',
+      width: colWidths.useCount,
       sorter: (a: any, b: any) => (a._count?.devices || 0) - (b._count?.devices || 0),
       showSorterTooltip: false,
       render: (count: any) => count?.devices || 0,
     },
     {
       title: '操作',
-      width: 150,
+      key: 'action',
+      width: colWidths.action,
       render: (_: any, record: any) => (
         <Space>
           <Button
@@ -325,6 +360,14 @@ export default function Templates() {
       ),
     },
   ];
+
+  const columns = baseColumns.map((col) => ({
+    ...col,
+    onHeaderCell: (column: any) => ({
+      width: column.width,
+      onResize: handleResize(col.key as string),
+    }),
+  }));
 
   return (
     <div>
@@ -376,6 +419,8 @@ export default function Templates() {
         dataSource={(data as any)?.data || []}
         rowKey="id"
         loading={loading}
+        components={{ header: { cell: ResizableTitle } }}
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: query.page,
           pageSize: query.pageSize,
