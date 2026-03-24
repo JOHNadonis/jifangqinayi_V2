@@ -1,10 +1,17 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Col, List, Row, Spin, Statistic, Tag } from 'antd';
 import { CloudSyncOutlined, DisconnectOutlined, PlusOutlined, ScanOutlined, WifiOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { dashboardApi, syncApi } from '../../services/api';
 import { clearSyncedActions, getLastSyncTime, getPendingSyncActions, markAsSynced, setLastSyncTime } from '../../services/offline';
+
+const statusLabels: Record<string, string> = {
+  RECORDED: '已记录',
+  LABELED: '已贴标',
+  DISCONNECTED: '已拆除',
+  VERIFIED: '已验证',
+};
 
 export default function MobileHome() {
   const navigate = useNavigate();
@@ -59,11 +66,11 @@ export default function MobileHome() {
       <Card size="small" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            {isOnline ? <Tag icon={<WifiOutlined />} color="green">Online</Tag> : <Tag icon={<DisconnectOutlined />} color="red">Offline</Tag>}
-            {pendingCount > 0 && <Tag color="orange">Pending: {pendingCount}</Tag>}
+            {isOnline ? <Tag icon={<WifiOutlined />} color="green">在线</Tag> : <Tag icon={<DisconnectOutlined />} color="red">离线</Tag>}
+            {pendingCount > 0 && <Tag color="orange">待同步: {pendingCount}</Tag>}
           </div>
           <Button icon={<CloudSyncOutlined spin={syncing} />} type="primary" size="small" onClick={handleSync} disabled={!isOnline}>
-            Sync
+            同步
           </Button>
         </div>
       </Card>
@@ -72,13 +79,13 @@ export default function MobileHome() {
         <Col span={12}>
           <Card hoverable style={{ textAlign: 'center' }} onClick={() => navigate('/mobile/scanner')}>
             <ScanOutlined style={{ fontSize: 32 }} />
-            <div style={{ marginTop: 8 }}>Scan Cable</div>
+            <div style={{ marginTop: 8 }}>扫描线缆</div>
           </Card>
         </Col>
         <Col span={12}>
           <Card hoverable style={{ textAlign: 'center' }} onClick={() => navigate('/mobile/record')}>
             <PlusOutlined style={{ fontSize: 32 }} />
-            <div style={{ marginTop: 8 }}>Record Cable</div>
+            <div style={{ marginTop: 8 }}>记录线缆</div>
           </Card>
         </Col>
       </Row>
@@ -89,23 +96,23 @@ export default function MobileHome() {
         </div>
       ) : (
         <>
-          <Card title="Device Status" size="small" style={{ marginBottom: 16 }}>
+          <Card title="设备状态" size="small" style={{ marginBottom: 16 }}>
             <Row gutter={12}>
-              <Col span={8}><Statistic title="Total" value={stats?.overview?.totalDevices ?? 0} /></Col>
-              <Col span={8}><Statistic title="Moving" value={stats?.devicesByStatus?.MOVING ?? 0} /></Col>
-              <Col span={8}><Statistic title="Arrived" value={stats?.devicesByStatus?.ARRIVED ?? 0} /></Col>
+              <Col span={8}><Statistic title="总数" value={stats?.overview?.totalDevices ?? 0} /></Col>
+              <Col span={8}><Statistic title="搬迁中" value={stats?.devicesByStatus?.MOVING ?? 0} /></Col>
+              <Col span={8}><Statistic title="已到达" value={stats?.devicesByStatus?.ARRIVED ?? 0} /></Col>
             </Row>
           </Card>
 
-          <Card title="Recent Cables" size="small">
+          <Card title="最近线缆" size="small">
             <List
               size="small"
               dataSource={stats?.recentCables?.slice(0, 5) ?? []}
               renderItem={(item: any) => (
                 <List.Item>
                   <Tag>{item.traceCode}</Tag>
-                  <span style={{ marginLeft: 8, flex: 1 }}>{item.src} to {item.dst}</span>
-                  <Tag>{item.status}</Tag>
+                  <span style={{ marginLeft: 8, flex: 1 }}>{item.src} → {item.dst}</span>
+                  <Tag>{statusLabels[item.status] || item.status}</Tag>
                 </List.Item>
               )}
             />

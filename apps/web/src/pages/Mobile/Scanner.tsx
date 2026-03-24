@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Button, Card, Descriptions, Input, Modal, Space, Tag, message } from 'antd';
 import { ArrowRightOutlined, CheckOutlined, ScanOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -24,6 +24,21 @@ const statusColor: Record<string, string> = {
   VERIFIED: 'success',
 };
 
+const statusLabels: Record<string, string> = {
+  RECORDED: '已记录',
+  LABELED: '已贴标',
+  DISCONNECTED: '已拆除',
+  VERIFIED: '已验证',
+};
+
+const cableTypeLabels: Record<string, string> = {
+  FIBER: '光纤',
+  CAT6: 'CAT6网线',
+  CAT5E: 'CAT5E网线',
+  POWER: '电源线',
+  OTHER: '其他',
+};
+
 export default function MobileScanner() {
   const [traceCode, setTraceCode] = useState('');
   const [cable, setCable] = useState<CableDetail | null>(null);
@@ -34,7 +49,7 @@ export default function MobileScanner() {
     onSuccess: (data: CableDetail) => setCable(data),
     onError: () => {
       setCable(null);
-      message.error('Cable not found');
+      message.error('未找到该线缆');
     },
   });
 
@@ -47,7 +62,7 @@ export default function MobileScanner() {
           setCable({ ...cable, status: 'VERIFIED' });
         }
         setGuideOpen(false);
-        message.success('Verified');
+        message.success('验证通过');
       },
     },
   );
@@ -55,7 +70,7 @@ export default function MobileScanner() {
   const handleSearch = () => {
     const code = traceCode.trim();
     if (!code) {
-      message.warning('Enter trace code first');
+      message.warning('请输入追溯码');
       return;
     }
     findCable(code.toUpperCase());
@@ -69,11 +84,11 @@ export default function MobileScanner() {
             value={traceCode}
             onChange={(e) => setTraceCode(e.target.value.toUpperCase())}
             prefix={<ScanOutlined />}
-            placeholder="Scan or input trace code"
+            placeholder="扫描或输入追溯码"
             onPressEnter={handleSearch}
           />
           <Button type="primary" onClick={handleSearch} loading={loading}>
-            Search
+            查询
           </Button>
         </Space.Compact>
       </Card>
@@ -81,38 +96,38 @@ export default function MobileScanner() {
       {cable ? (
         <Card title={cable.traceCode}>
           <Descriptions size="small" column={1}>
-            <Descriptions.Item label="Status">
-              <Tag color={statusColor[cable.status]}>{cable.status}</Tag>
+            <Descriptions.Item label="状态">
+              <Tag color={statusColor[cable.status]}>{statusLabels[cable.status] || cable.status}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Type">{cable.cableType}</Descriptions.Item>
-            <Descriptions.Item label="Source">
+            <Descriptions.Item label="线缆类型">{cableTypeLabels[cable.cableType] || cable.cableType}</Descriptions.Item>
+            <Descriptions.Item label="源端设备">
               {cable.srcDevice?.name} <Tag>{cable.srcPortIndex}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Target">
+            <Descriptions.Item label="目标设备">
               {cable.dstDevice?.name} <Tag>{cable.dstPortIndex}</Tag>
             </Descriptions.Item>
-            {cable.purpose && <Descriptions.Item label="Purpose">{cable.purpose}</Descriptions.Item>}
+            {cable.purpose && <Descriptions.Item label="用途">{cable.purpose}</Descriptions.Item>}
           </Descriptions>
 
           <Space style={{ marginTop: 12 }}>
             {cable.status !== 'VERIFIED' && (
               <Button type="primary" icon={<CheckOutlined />} onClick={() => setGuideOpen(true)}>
-                Start Guide
+                开始验证
               </Button>
             )}
-            <Button onClick={() => setCable(null)}>Clear</Button>
+            <Button onClick={() => setCable(null)}>清除</Button>
           </Space>
         </Card>
       ) : (
         <div style={{ textAlign: 'center', color: '#999', marginTop: 48 }}>
           <ScanOutlined style={{ fontSize: 48 }} />
-          <div style={{ marginTop: 8 }}>Search a cable by trace code</div>
+          <div style={{ marginTop: 8 }}>输入追溯码查询线缆信息</div>
         </div>
       )}
 
       <Modal open={guideOpen} footer={null} onCancel={() => setGuideOpen(false)} centered>
         <div style={{ textAlign: 'center' }}>
-          <h3>Connect To</h3>
+          <h3>连接至目标</h3>
           <Card style={{ marginBottom: 12 }}>
             <div>{cable?.dstDevice?.rack?.name}</div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{cable?.dstDevice?.name}</div>
@@ -126,7 +141,7 @@ export default function MobileScanner() {
             onClick={() => cable && verifyCable(cable.id)}
             block
           >
-            Confirm Done
+            确认完成
           </Button>
         </div>
       </Modal>

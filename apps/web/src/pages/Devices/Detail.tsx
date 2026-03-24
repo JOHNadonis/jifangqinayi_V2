@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -28,11 +28,33 @@ const statusColors: Record<string, string> = {
   ARRIVED: 'blue',
 };
 
+const statusLabels: Record<string, string> = {
+  ONLINE: '在线',
+  MOVING: '搬迁中',
+  OFFLINE: '离线',
+  ARRIVED: '已到达',
+};
+
 const cableStatusColors: Record<string, string> = {
   RECORDED: 'default',
   LABELED: 'processing',
   DISCONNECTED: 'warning',
   VERIFIED: 'success',
+};
+
+const cableStatusLabels: Record<string, string> = {
+  RECORDED: '已记录',
+  LABELED: '已贴标',
+  DISCONNECTED: '已拆除',
+  VERIFIED: '已验证',
+};
+
+const cableTypeLabels: Record<string, string> = {
+  FIBER: '光纤',
+  CAT6: 'CAT6网线',
+  CAT5E: 'CAT5E网线',
+  POWER: '电源线',
+  OTHER: '其他',
 };
 
 interface PortItem {
@@ -211,14 +233,14 @@ export default function DeviceDetail() {
 
   const cableColumns: ColumnsType<CableRecord> = [
     {
-      title: 'Trace Code',
+      title: '追溯码',
       dataIndex: 'traceCode',
       key: 'traceCode',
       width: 180,
       render: (value: string) => <Tag>{value}</Tag>,
     },
     {
-      title: 'Source',
+      title: '源端设备',
       key: 'source',
       render: (_, record) => (
         <span>
@@ -228,7 +250,7 @@ export default function DeviceDetail() {
       ),
     },
     {
-      title: 'Target',
+      title: '目标设备',
       key: 'target',
       render: (_, record) => (
         <span>
@@ -238,24 +260,25 @@ export default function DeviceDetail() {
       ),
     },
     {
-      title: 'Type',
+      title: '线缆类型',
       dataIndex: 'cableType',
       key: 'cableType',
       width: 120,
+      render: (value: string) => cableTypeLabels[value] || value,
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => <Tag color={cableStatusColors[status]}>{status}</Tag>,
+      render: (status: string) => <Tag color={cableStatusColors[status]}>{cableStatusLabels[status] || status}</Tag>,
     },
     {
-      title: 'Action',
+      title: '操作',
       key: 'action',
       width: 100,
       render: (_, record) => (
-        <Popconfirm title="Delete this cable?" onConfirm={() => handleDeleteCable(record.id)}>
+        <Popconfirm title="确定删除此线缆？" okText="确定" cancelText="取消" onConfirm={() => handleDeleteCable(record.id)}>
           <Button type="link" danger icon={<DeleteOutlined />} />
         </Popconfirm>
       ),
@@ -265,11 +288,11 @@ export default function DeviceDetail() {
   const handleDeleteCable = async (cableId: string) => {
     try {
       await cablesApi.delete(cableId);
-      message.success('Cable deleted');
+      message.success('删除成功');
       refreshCables();
       refreshDevice();
     } catch (error: any) {
-      message.error(error?.message || 'Delete failed');
+      message.error(error?.message || '删除失败');
     }
   };
 
@@ -283,13 +306,13 @@ export default function DeviceDetail() {
     try {
       const values = await cableForm.validateFields();
       await cablesApi.create(values);
-      message.success('Cable created');
+      message.success('线缆创建成功');
       setAddCableOpen(false);
       refreshCables();
       refreshDevice();
     } catch (error: any) {
       if (!error?.errorFields) {
-        message.error(error?.message || 'Create failed');
+        message.error(error?.message || '创建失败');
       }
     }
   };
@@ -308,12 +331,12 @@ export default function DeviceDetail() {
     try {
       const values = await moveForm.validateFields();
       await devicesApi.move(id!, values);
-      message.success('Move submitted');
+      message.success('搬迁任务已提交');
       setMoveOpen(false);
       refreshDevice();
     } catch (error: any) {
       if (!error?.errorFields) {
-        message.error(error?.message || 'Move failed');
+        message.error(error?.message || '搬迁失败');
       }
     }
   };
@@ -330,8 +353,8 @@ export default function DeviceDetail() {
     return (
       <Card>
         <Space direction="vertical">
-          <span>Device not found.</span>
-          <Button onClick={() => navigate('/devices')}>Back</Button>
+          <span>设备未找到</span>
+          <Button onClick={() => navigate('/devices')}>返回</Button>
         </Space>
       </Card>
     );
@@ -344,58 +367,58 @@ export default function DeviceDetail() {
       <div style={{ marginBottom: 16 }}>
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/devices')}>
-            Back
+            返回
           </Button>
           <h2 style={{ margin: 0 }}>{device.name}</h2>
         </Space>
       </div>
 
       <Card
-        title="Device"
+        title="设备信息"
         extra={
           <Button icon={<SwapOutlined />} onClick={handleOpenMove}>
-            Move
+            搬迁
           </Button>
         }
         style={{ marginBottom: 16 }}
       >
         <Descriptions column={{ xs: 1, md: 2, lg: 3 }}>
-          <Descriptions.Item label="Model">
+          <Descriptions.Item label="品牌型号">
             {device.template.brand} {device.template.model}
           </Descriptions.Item>
-          <Descriptions.Item label="Size">{device.template.sizeU}U</Descriptions.Item>
-          <Descriptions.Item label="Status">
-            <Tag color={statusColors[device.status]}>{device.status}</Tag>
+          <Descriptions.Item label="U高度">{device.template.sizeU}U</Descriptions.Item>
+          <Descriptions.Item label="状态">
+            <Tag color={statusColors[device.status]}>{statusLabels[device.status] || device.status}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Rack">
+          <Descriptions.Item label="所在机柜">
             {device.rack ? `${device.rack.room?.name ?? ''} ${device.rack.name}` : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="U Position">
+          <Descriptions.Item label="U位">
             {device.positionU ? `U${device.positionU}` : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated">
+          <Descriptions.Item label="更新时间">
             {new Date(device.updatedAt).toLocaleString()}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title="Ports" style={{ marginBottom: 16 }}>
+      <Card title="端口列表" style={{ marginBottom: 16 }}>
         {portItems.length === 0 ? (
-          <div style={{ color: '#999' }}>No port layout data.</div>
+          <div style={{ color: '#999' }}>暂无端口配置数据</div>
         ) : (
           <Space wrap>
             {portItems.map((port) => (
-              <Tag key={`${port.panel}-${port.key}`}>{`${port.panel}:${port.key} (${port.type})`}</Tag>
+              <Tag key={`${port.panel}-${port.key}`}>{`${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`}</Tag>
             ))}
           </Space>
         )}
       </Card>
 
       <Card
-        title="Cables"
+        title="线缆连接"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddCable}>
-            Add Cable
+            新增线缆
           </Button>
         }
       >
@@ -404,19 +427,27 @@ export default function DeviceDetail() {
           columns={cableColumns}
           dataSource={cables}
           loading={cablesLoading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
         />
       </Card>
 
-      <Modal title="Add Cable" open={addCableOpen} onOk={handleCreateCable} onCancel={() => setAddCableOpen(false)}>
+      <Modal
+        title="新增线缆"
+        open={addCableOpen}
+        onOk={handleCreateCable}
+        onCancel={() => setAddCableOpen(false)}
+        okText="创建"
+        cancelText="取消"
+      >
         <Form form={cableForm} layout="vertical">
-          <Form.Item name="srcDeviceId" label="Source Device" rules={[{ required: true }]}> 
+          <Form.Item name="srcDeviceId" label="源端设备" rules={[{ required: true, message: '请选择源端设备' }]}>
             <Select disabled options={[{ label: device.name, value: device.id }]} />
           </Form.Item>
 
-          <Form.Item name="srcPortIndex" label="Source Port" rules={[{ required: true }]}>
+          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请选择源端端口' }]}>
             <Select
               showSearch
+              placeholder="选择端口"
               optionFilterProp="label"
               options={srcPorts.map((port) => ({ label: `${port.key} (${port.type})`, value: port.key }))}
             />
@@ -424,9 +455,10 @@ export default function DeviceDetail() {
 
           <Divider />
 
-          <Form.Item name="dstDeviceId" label="Target Device" rules={[{ required: true }]}>
+          <Form.Item name="dstDeviceId" label="目标设备" rules={[{ required: true, message: '请选择目标设备' }]}>
             <Select
               showSearch
+              placeholder="选择目标设备"
               optionFilterProp="label"
               onChange={() => cableForm.setFieldValue('dstPortIndex', undefined)}
               options={allDevices
@@ -435,41 +467,51 @@ export default function DeviceDetail() {
             />
           </Form.Item>
 
-          <Form.Item name="dstPortIndex" label="Target Port" rules={[{ required: true }]}>
+          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请选择目标端口' }]}>
             <Select
               showSearch
+              placeholder="选择端口"
               optionFilterProp="label"
               options={dstPorts.map((port) => ({ label: `${port.key} (${port.type})`, value: port.key }))}
             />
           </Form.Item>
 
-          <Form.Item name="cableType" label="Cable Type" rules={[{ required: true }]}>
+          <Form.Item name="cableType" label="线缆类型" rules={[{ required: true, message: '请选择线缆类型' }]}>
             <Select
+              placeholder="选择线缆类型"
               options={[
-                { label: 'FIBER', value: 'FIBER' },
-                { label: 'CAT6', value: 'CAT6' },
-                { label: 'CAT5E', value: 'CAT5E' },
-                { label: 'POWER', value: 'POWER' },
-                { label: 'OTHER', value: 'OTHER' },
+                { label: '光纤', value: 'FIBER' },
+                { label: 'CAT6网线', value: 'CAT6' },
+                { label: 'CAT5E网线', value: 'CAT5E' },
+                { label: '电源线', value: 'POWER' },
+                { label: '其他', value: 'OTHER' },
               ]}
             />
           </Form.Item>
 
-          <Form.Item name="color" label="Color">
-            <Input />
+          <Form.Item name="color" label="颜色">
+            <Input placeholder="例如：黄色、蓝色" />
           </Form.Item>
 
-          <Form.Item name="purpose" label="Purpose">
-            <Input />
+          <Form.Item name="purpose" label="用途">
+            <Input placeholder="例如：核心链路、管理网" />
           </Form.Item>
         </Form>
       </Modal>
 
-      <Modal title="Move Device" open={moveOpen} onOk={handleMove} onCancel={() => setMoveOpen(false)}>
+      <Modal
+        title="设备搬迁"
+        open={moveOpen}
+        onOk={handleMove}
+        onCancel={() => setMoveOpen(false)}
+        okText="确定搬迁"
+        cancelText="取消"
+      >
         <Form form={moveForm} layout="vertical">
-          <Form.Item name="targetRackId" label="Target Rack" rules={[{ required: true }]}>
+          <Form.Item name="targetRackId" label="目标机柜" rules={[{ required: true, message: '请选择目标机柜' }]}>
             <Select
               showSearch
+              placeholder="选择目标机柜"
               optionFilterProp="label"
               onChange={handleRackChange}
               options={racks.map((rack) => ({
@@ -479,8 +521,9 @@ export default function DeviceDetail() {
             />
           </Form.Item>
 
-          <Form.Item name="targetPositionU" label="Target U Position" rules={[{ required: true }]}>
+          <Form.Item name="targetPositionU" label="目标U位" rules={[{ required: true, message: '请选择目标U位' }]}>
             <Select
+              placeholder="选择U位"
               options={availableUPositions.map((value) => ({
                 label: `U${value}${device.template.sizeU > 1 ? ` - U${value + device.template.sizeU - 1}` : ''}`,
                 value,
@@ -492,4 +535,3 @@ export default function DeviceDetail() {
     </div>
   );
 }
-

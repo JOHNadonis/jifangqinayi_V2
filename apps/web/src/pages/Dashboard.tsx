@@ -60,7 +60,7 @@ export default function Dashboard() {
     { title: '模板', dataIndex: 'template', key: 'template' },
     { title: '位置', dataIndex: 'location', key: 'location' },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (value: string) => <Tag color={statusColor[value]}>{value}</Tag>,
@@ -68,11 +68,11 @@ export default function Dashboard() {
   ];
 
   const cableColumns = [
-    { title: 'Trace Code', dataIndex: 'traceCode', key: 'traceCode' },
-    { title: 'Source', dataIndex: 'src', key: 'src' },
-    { title: 'Target', dataIndex: 'dst', key: 'dst' },
+    { title: '追溯码', dataIndex: 'traceCode', key: 'traceCode' },
+    { title: '源端', dataIndex: 'src', key: 'src' },
+    { title: '目标', dataIndex: 'dst', key: 'dst' },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (value: string) => <Tag color={statusColor[value]}>{value}</Tag>,
@@ -82,7 +82,7 @@ export default function Dashboard() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Dashboard</h2>
+        <h2 style={{ margin: 0 }}>仪表盘</h2>
         <Button icon={<DownloadOutlined />} onClick={handleExport}>
           导出全部数据
         </Button>

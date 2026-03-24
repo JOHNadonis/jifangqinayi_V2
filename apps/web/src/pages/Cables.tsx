@@ -1,6 +1,6 @@
-﻿import { useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
-import { CheckOutlined, DeleteOutlined, DisconnectOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, message } from 'antd';
+import { CheckOutlined, DeleteOutlined, DisconnectOutlined, DownloadOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
 import { cablesApi, devicesApi, exportApi } from '../services/api';
@@ -32,18 +32,33 @@ interface Paged<T> {
 }
 
 const cableTypeOptions = [
-  { label: 'FIBER', value: 'FIBER' },
-  { label: 'CAT6', value: 'CAT6' },
-  { label: 'CAT5E', value: 'CAT5E' },
-  { label: 'POWER', value: 'POWER' },
-  { label: 'OTHER', value: 'OTHER' },
+  { label: '光纤', value: 'FIBER' },
+  { label: 'CAT6网线', value: 'CAT6' },
+  { label: 'CAT5E网线', value: 'CAT5E' },
+  { label: '电源线', value: 'POWER' },
+  { label: '其他', value: 'OTHER' },
 ];
+
+const cableTypeLabels: Record<string, string> = {
+  FIBER: '光纤',
+  CAT6: 'CAT6网线',
+  CAT5E: 'CAT5E网线',
+  POWER: '电源线',
+  OTHER: '其他',
+};
 
 const cableStatusColor: Record<string, string> = {
   RECORDED: 'default',
   LABELED: 'processing',
   DISCONNECTED: 'warning',
   VERIFIED: 'success',
+};
+
+const cableStatusLabels: Record<string, string> = {
+  RECORDED: '已记录',
+  LABELED: '已贴标',
+  DISCONNECTED: '已拆除',
+  VERIFIED: '已验证',
 };
 
 export default function Cables() {
@@ -73,19 +88,19 @@ export default function Cables() {
     {
       manual: true,
       onSuccess: () => {
-        message.success('Created');
+        message.success('创建成功');
         setOpen(false);
         form.resetFields();
         refresh();
       },
-      onError: (error: any) => message.error(error?.message || 'Create failed'),
+      onError: (error: any) => message.error(error?.message || '创建失败'),
     },
   );
 
   const { run: deleteCable } = useRequest((id: string) => cablesApi.delete(id), {
     manual: true,
     onSuccess: () => {
-      message.success('Deleted');
+      message.success('删除成功');
       refresh();
     },
   });
@@ -93,7 +108,7 @@ export default function Cables() {
   const { run: verifyCable } = useRequest((id: string) => cablesApi.verify(id), {
     manual: true,
     onSuccess: () => {
-      message.success('Verified');
+      message.success('已标记为验证通过');
       refresh();
     },
   });
@@ -101,10 +116,20 @@ export default function Cables() {
   const { run: disconnectCable } = useRequest((id: string) => cablesApi.disconnect(id), {
     manual: true,
     onSuccess: () => {
-      message.success('Disconnected');
+      message.success('已标记为拆除');
       refresh();
     },
   });
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await cablesApi.update(id, { status });
+      message.success(`已标记为${cableStatusLabels[status]}`);
+      refresh();
+    } catch (error: any) {
+      message.error(error?.message || '操作失败');
+    }
+  };
 
   const handleExport = async () => {
     try {
@@ -112,25 +137,25 @@ export default function Cables() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cable-labels-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download = `线缆标签-${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
-      message.success('Exported');
+      message.success('导出成功');
     } catch (error: any) {
-      message.error(error?.message || 'Export failed');
+      message.error(error?.message || '导出失败');
     }
   };
 
   const columns: ColumnsType<CableRow> = [
     {
-      title: 'Trace Code',
+      title: '追溯码',
       dataIndex: 'traceCode',
       key: 'traceCode',
       width: 180,
       render: (value: string) => <Tag>{value}</Tag>,
     },
     {
-      title: 'Source',
+      title: '源端设备',
       key: 'source',
       render: (_, record) => (
         <span>
@@ -140,7 +165,7 @@ export default function Cables() {
       ),
     },
     {
-      title: 'Target',
+      title: '目标设备',
       key: 'target',
       render: (_, record) => (
         <span>
@@ -149,28 +174,49 @@ export default function Cables() {
         </span>
       ),
     },
-    { title: 'Type', dataIndex: 'cableType', key: 'cableType', width: 110 },
-    { title: 'Color', dataIndex: 'color', key: 'color', width: 90 },
-    { title: 'Purpose', dataIndex: 'purpose', key: 'purpose', ellipsis: true },
     {
-      title: 'Status',
+      title: '线缆类型',
+      dataIndex: 'cableType',
+      key: 'cableType',
+      width: 110,
+      render: (value: string) => cableTypeLabels[value] || value,
+    },
+    { title: '颜色', dataIndex: 'color', key: 'color', width: 90 },
+    { title: '用途', dataIndex: 'purpose', key: 'purpose', ellipsis: true },
+    {
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 110,
-      render: (value: string) => <Tag color={cableStatusColor[value]}>{value}</Tag>,
+      render: (value: string) => (
+        <Tag color={cableStatusColor[value]}>{cableStatusLabels[value] || value}</Tag>
+      ),
     },
     {
-      title: 'Action',
+      title: '操作',
       key: 'action',
-      width: 160,
+      width: 200,
       render: (_, record) => (
-        <Space>
-          {record.status !== 'VERIFIED' && <Button type="link" icon={<CheckOutlined />} onClick={() => verifyCable(record.id)} />}
-          {record.status !== 'DISCONNECTED' && (
-            <Button type="link" icon={<DisconnectOutlined />} onClick={() => disconnectCable(record.id)} />
+        <Space size="small">
+          {record.status === 'RECORDED' && (
+            <Tooltip title="标记为已贴标">
+              <Button type="link" size="small" icon={<TagOutlined />} onClick={() => handleUpdateStatus(record.id, 'LABELED')} />
+            </Tooltip>
           )}
-          <Popconfirm title="Delete this cable?" onConfirm={() => deleteCable(record.id)}>
-            <Button type="link" danger icon={<DeleteOutlined />} />
+          {(record.status === 'RECORDED' || record.status === 'LABELED') && (
+            <Tooltip title="标记为已拆除">
+              <Button type="link" size="small" icon={<DisconnectOutlined />} onClick={() => disconnectCable(record.id)} />
+            </Tooltip>
+          )}
+          {record.status !== 'VERIFIED' && (
+            <Tooltip title="标记为已验证">
+              <Button type="link" size="small" icon={<CheckOutlined />} style={{ color: '#52c41a' }} onClick={() => verifyCable(record.id)} />
+            </Tooltip>
+          )}
+          <Popconfirm title="确定删除此线缆？" okText="确定" cancelText="取消" onConfirm={() => deleteCable(record.id)}>
+            <Tooltip title="删除">
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -183,36 +229,36 @@ export default function Cables() {
         <Space>
           <Input.Search
             allowClear
-            placeholder="Search trace code"
+            placeholder="搜索追溯码"
             onSearch={(value) => setQuery((prev) => ({ ...prev, search: value, page: 1 }))}
             style={{ width: 220 }}
           />
           <Select
             allowClear
             style={{ width: 140 }}
-            placeholder="Status"
+            placeholder="状态筛选"
             onChange={(value) => setQuery((prev) => ({ ...prev, status: value ?? '', page: 1 }))}
             options={[
-              { label: 'RECORDED', value: 'RECORDED' },
-              { label: 'LABELED', value: 'LABELED' },
-              { label: 'DISCONNECTED', value: 'DISCONNECTED' },
-              { label: 'VERIFIED', value: 'VERIFIED' },
+              { label: '已记录', value: 'RECORDED' },
+              { label: '已贴标', value: 'LABELED' },
+              { label: '已拆除', value: 'DISCONNECTED' },
+              { label: '已验证', value: 'VERIFIED' },
             ]}
           />
           <Select
             allowClear
             style={{ width: 140 }}
-            placeholder="Type"
+            placeholder="类型筛选"
             onChange={(value) => setQuery((prev) => ({ ...prev, cableType: value ?? '', page: 1 }))}
             options={cableTypeOptions}
           />
         </Space>
         <Space>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
-            Export Labels{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
+            导出标签{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            New Cable
+            新增线缆
           </Button>
         </Space>
       </div>
@@ -228,12 +274,13 @@ export default function Cables() {
           pageSize: query.pageSize,
           total: data?.total ?? 0,
           showSizeChanger: true,
+          showTotal: (total) => `共 ${total} 条`,
           onChange: (page, pageSize) => setQuery((prev) => ({ ...prev, page, pageSize })),
         }}
       />
 
       <Modal
-        title="Create Cable"
+        title="新增线缆"
         open={open}
         onCancel={() => {
           setOpen(false);
@@ -243,42 +290,46 @@ export default function Cables() {
           form.validateFields().then((values) => createCable(values));
         }}
         confirmLoading={creating}
+        okText="创建"
+        cancelText="取消"
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="srcDeviceId" label="Source Device" rules={[{ required: true }]}>
+          <Form.Item name="srcDeviceId" label="源端设备" rules={[{ required: true, message: '请选择源端设备' }]}>
             <Select
               showSearch
+              placeholder="选择源端设备"
               optionFilterProp="label"
               options={devices.map((device) => ({
                 value: device.id,
-                label: `${device.name} (${device.rack?.name ?? 'Unassigned'})`,
+                label: `${device.name} (${device.rack?.name ?? '未上架'})`,
               }))}
             />
           </Form.Item>
-          <Form.Item name="srcPortIndex" label="Source Port" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请输入源端端口' }]}>
+            <Input placeholder="例如：GE0/0/1" />
           </Form.Item>
-          <Form.Item name="dstDeviceId" label="Target Device" rules={[{ required: true }]}>
+          <Form.Item name="dstDeviceId" label="目标设备" rules={[{ required: true, message: '请选择目标设备' }]}>
             <Select
               showSearch
+              placeholder="选择目标设备"
               optionFilterProp="label"
               options={devices.map((device) => ({
                 value: device.id,
-                label: `${device.name} (${device.rack?.name ?? 'Unassigned'})`,
+                label: `${device.name} (${device.rack?.name ?? '未上架'})`,
               }))}
             />
           </Form.Item>
-          <Form.Item name="dstPortIndex" label="Target Port" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请输入目标端口' }]}>
+            <Input placeholder="例如：GE0/0/2" />
           </Form.Item>
-          <Form.Item name="cableType" label="Cable Type" rules={[{ required: true }]}>
-            <Select options={cableTypeOptions} />
+          <Form.Item name="cableType" label="线缆类型" rules={[{ required: true, message: '请选择线缆类型' }]}>
+            <Select placeholder="选择线缆类型" options={cableTypeOptions} />
           </Form.Item>
-          <Form.Item name="color" label="Color">
-            <Input />
+          <Form.Item name="color" label="颜色">
+            <Input placeholder="例如：黄色、蓝色" />
           </Form.Item>
-          <Form.Item name="purpose" label="Purpose">
-            <Input />
+          <Form.Item name="purpose" label="用途">
+            <Input placeholder="例如：核心链路、管理网" />
           </Form.Item>
         </Form>
       </Modal>

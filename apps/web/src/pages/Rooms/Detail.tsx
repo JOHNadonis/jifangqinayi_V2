@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import {
@@ -49,6 +49,11 @@ interface Paged<T> {
   data: T[];
 }
 
+const roomTypeLabels: Record<string, string> = {
+  OLD: '旧机房',
+  NEW: '新机房',
+};
+
 export default function RoomDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -76,10 +81,10 @@ export default function RoomDetail() {
       const values = await form.validateFields();
       if (editingRack) {
         await updateRack(editingRack.id, values);
-        message.success('Rack updated');
+        message.success('机柜更新成功');
       } else {
         await createRack({ ...values, roomId: id });
-        message.success('Rack created');
+        message.success('机柜创建成功');
       }
       setOpen(false);
       setEditingRack(null);
@@ -87,14 +92,14 @@ export default function RoomDetail() {
       refresh();
     } catch (error: any) {
       if (!error?.errorFields) {
-        message.error(error?.message || 'Save failed');
+        message.error(error?.message || '保存失败');
       }
     }
   };
 
   const handleDelete = async (rackId: string) => {
     await deleteRack(rackId);
-    message.success('Rack deleted');
+    message.success('机柜删除成功');
     refresh();
   };
 
@@ -110,26 +115,26 @@ export default function RoomDetail() {
     <div>
       <div style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/rooms')}>
-          Back
+          返回
         </Button>
       </div>
 
-      <Card title="Room" style={{ marginBottom: 16 }}>
+      <Card title="机房信息" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
-          <Descriptions.Item label="Name">{room?.name}</Descriptions.Item>
-          <Descriptions.Item label="Type">
-            <Tag color={room?.type === 'OLD' ? 'orange' : 'green'}>{room?.type}</Tag>
+          <Descriptions.Item label="名称">{room?.name}</Descriptions.Item>
+          <Descriptions.Item label="类型">
+            <Tag color={room?.type === 'OLD' ? 'orange' : 'green'}>{roomTypeLabels[room?.type || ''] || room?.type}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Location">{room?.location || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Created At">{room?.createdAt ? new Date(room.createdAt).toLocaleString() : '-'}</Descriptions.Item>
-          <Descriptions.Item label="Description" span={2}>
+          <Descriptions.Item label="位置">{room?.location || '-'}</Descriptions.Item>
+          <Descriptions.Item label="创建时间">{room?.createdAt ? new Date(room.createdAt).toLocaleString() : '-'}</Descriptions.Item>
+          <Descriptions.Item label="描述" span={2}>
             {room?.description || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Card
-        title={`Racks (${racks.length})`}
+        title={`机柜列表 (${racks.length})`}
         extra={
           <Button
             type="primary"
@@ -141,7 +146,7 @@ export default function RoomDetail() {
               setOpen(true);
             }}
           >
-            New Rack
+            新增机柜
           </Button>
         }
       >
@@ -169,7 +174,9 @@ export default function RoomDetail() {
                     />,
                     <Popconfirm
                       key="delete"
-                      title="Delete this rack?"
+                      title="确定删除此机柜？"
+                      okText="确定"
+                      cancelText="取消"
                       onConfirm={(event) => {
                         event?.stopPropagation();
                         handleDelete(rack.id);
@@ -183,9 +190,9 @@ export default function RoomDetail() {
                   ]}
                 >
                   <div style={{ fontWeight: 600, marginBottom: 6 }}>{rack.name}</div>
-                  <div>Total U: {rack.totalU}</div>
-                  <div>Used U: {rack.usedU ?? 0}</div>
-                  {rack.location && <div>Location: {rack.location}</div>}
+                  <div>总U位: {rack.totalU}</div>
+                  <div>已用U位: {rack.usedU ?? 0}</div>
+                  {rack.location && <div>位置: {rack.location}</div>}
                 </Card>
               </Col>
             ))}
@@ -194,7 +201,7 @@ export default function RoomDetail() {
       </Card>
 
       <Modal
-        title={editingRack ? 'Edit Rack' : 'Create Rack'}
+        title={editingRack ? '编辑机柜' : '新增机柜'}
         open={open}
         onCancel={() => {
           setOpen(false);
@@ -203,19 +210,21 @@ export default function RoomDetail() {
         }}
         onOk={handleSubmit}
         confirmLoading={creating || updating}
+        okText="保存"
+        cancelText="取消"
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入机柜名称' }]}>
+            <Input placeholder="例如：A01" />
           </Form.Item>
-          <Form.Item name="totalU" label="Total U" rules={[{ required: true }]}>
+          <Form.Item name="totalU" label="总U位" rules={[{ required: true, message: '请输入总U位' }]}>
             <InputNumber min={1} max={100} style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="location" label="Location">
-            <Input />
+          <Form.Item name="location" label="位置">
+            <Input placeholder="例如：A区第1排" />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} />
+          <Form.Item name="description" label="描述">
+            <Input.TextArea rows={3} placeholder="机柜用途描述" />
           </Form.Item>
         </Form>
       </Modal>
