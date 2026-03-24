@@ -1,14 +1,30 @@
-import { useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, message } from 'antd';
+import { useMemo, useState } from 'react';
+import { Button, Divider, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Tooltip, message } from 'antd';
 import { CheckOutlined, DeleteOutlined, DisconnectOutlined, DownloadOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRequest } from 'ahooks';
 import { cablesApi, devicesApi, exportApi } from '../services/api';
 
+interface DeviceTemplate {
+  id: string;
+  brand: string;
+  model: string;
+  sizeU: number;
+  deviceType: string;
+  portLayout?: string;
+}
+
 interface DeviceBrief {
   id: string;
   name: string;
-  rack?: { name: string };
+  rack?: { name: string; room?: { name: string } };
+  template?: DeviceTemplate;
+}
+
+interface PortItem {
+  key: string;
+  type: string;
+  panel: 'FRONT' | 'REAR';
 }
 
 interface CableRow {
@@ -61,11 +77,41 @@ const cableStatusLabels: Record<string, string> = {
   VERIFIED: '已验证',
 };
 
+/** 解析设备模板的端口布局，返回端口列表 */
+function toPortItems(layout: unknown): PortItem[] {
+  let parsed: any = layout;
+  if (typeof layout === 'string') {
+    try {
+      parsed = JSON.parse(layout);
+    } catch {
+      parsed = {};
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return [];
+
+  const front = Array.isArray(parsed?.front) ? parsed.front : [];
+  const rear = Array.isArray(parsed?.rear) ? parsed.rear : [];
+
+  const normalize = (ports: any[], panel: 'FRONT' | 'REAR'): PortItem[] =>
+    ports
+      .map((port) => {
+        const key = String(port?.index ?? port?.id ?? port?.name ?? '').trim();
+        if (!key) return null;
+        return { key, type: String(port?.type ?? 'UNKNOWN'), panel };
+      })
+      .filter((port): port is PortItem => port !== null);
+
+  return [...normalize(front, 'FRONT'), ...normalize(rear, 'REAR')];
+}
+
 export default function Cables() {
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [query, setQuery] = useState({ page: 1, pageSize: 20, search: '', status: '', cableType: '' });
+  // 用于跟踪选中的设备ID以触发端口列表更新
+  const [srcDeviceId, setSrcDeviceId] = useState<string | undefined>();
+  const [dstDeviceId, setDstDeviceId] = useState<string | undefined>();
 
   const { data, loading, refresh } = useRequest<Paged<CableRow>, []>(
     () =>
@@ -83,6 +129,19 @@ export default function Cables() {
 
   const devices = devicesResp?.data ?? [];
 
+  // 根据选中的设备动态计算端口列表
+  const srcPorts = useMemo(() => {
+    if (!srcDeviceId) return [];
+    const device = devices.find((d) => d.id === srcDeviceId);
+    return toPortItems(device?.template?.portLayout);
+  }, [srcDeviceId, devices]);
+
+  const dstPorts = useMemo(() => {
+    if (!dstDeviceId) return [];
+    const device = devices.find((d) => d.id === dstDeviceId);
+    return toPortItems(device?.template?.portLayout);
+  }, [dstDeviceId, devices]);
+
   const { run: createCable, loading: creating } = useRequest(
     (values: any) => cablesApi.create(values),
     {
@@ -91,6 +150,8 @@ export default function Cables() {
         message.success('创建成功');
         setOpen(false);
         form.resetFields();
+        setSrcDeviceId(undefined);
+        setDstDeviceId(undefined);
         refresh();
       },
       onError: (error: any) => message.error(error?.message || '创建失败'),
@@ -144,6 +205,13 @@ export default function Cables() {
     } catch (error: any) {
       message.error(error?.message || '导出失败');
     }
+  };
+
+  const handleOpenCreate = () => {
+    form.resetFields();
+    setSrcDeviceId(undefined);
+    setDstDeviceId(undefined);
+    setOpen(true);
   };
 
   const columns: ColumnsType<CableRow> = [
@@ -257,7 +325,7 @@ export default function Cables() {
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
             导出标签{selectedRowKeys.length > 0 ? ` (${selectedRowKeys.length})` : ''}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
             新增线缆
           </Button>
         </Space>
@@ -285,6 +353,8 @@ export default function Cables() {
         onCancel={() => {
           setOpen(false);
           form.resetFields();
+          setSrcDeviceId(undefined);
+          setDstDeviceId(undefined);
         }}
         onOk={() => {
           form.validateFields().then((values) => createCable(values));
@@ -299,29 +369,67 @@ export default function Cables() {
               showSearch
               placeholder="选择源端设备"
               optionFilterProp="label"
+              onChange={(value) => {
+                setSrcDeviceId(value);
+                form.setFieldValue('srcPortIndex', undefined);
+              }}
               options={devices.map((device) => ({
                 value: device.id,
                 label: `${device.name} (${device.rack?.name ?? '未上架'})`,
               }))}
             />
           </Form.Item>
-          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请输入源端端口' }]}>
-            <Input placeholder="例如：GE0/0/1" />
+          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请选择源端端口' }]}>
+            {srcPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={srcPorts.map((port) => ({
+                  value: port.key,
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                }))}
+              />
+            ) : (
+              <Input placeholder={srcDeviceId ? '该设备暂无端口配置，请手动输入' : '请先选择源端设备'} />
+            )}
           </Form.Item>
+
+          <Divider />
+
           <Form.Item name="dstDeviceId" label="目标设备" rules={[{ required: true, message: '请选择目标设备' }]}>
             <Select
               showSearch
               placeholder="选择目标设备"
               optionFilterProp="label"
+              onChange={(value) => {
+                setDstDeviceId(value);
+                form.setFieldValue('dstPortIndex', undefined);
+              }}
               options={devices.map((device) => ({
                 value: device.id,
                 label: `${device.name} (${device.rack?.name ?? '未上架'})`,
               }))}
             />
           </Form.Item>
-          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请输入目标端口' }]}>
-            <Input placeholder="例如：GE0/0/2" />
+          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请选择目标端口' }]}>
+            {dstPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={dstPorts.map((port) => ({
+                  value: port.key,
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                }))}
+              />
+            ) : (
+              <Input placeholder={dstDeviceId ? '该设备暂无端口配置，请手动输入' : '请先选择目标设备'} />
+            )}
           </Form.Item>
+
+          <Divider />
+
           <Form.Item name="cableType" label="线缆类型" rules={[{ required: true, message: '请选择线缆类型' }]}>
             <Select placeholder="选择线缆类型" options={cableTypeOptions} />
           </Form.Item>

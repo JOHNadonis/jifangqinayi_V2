@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Card, Form, Input, Select, Space, message } from 'antd';
 import { useRequest } from 'ahooks';
 import { cablesApi, devicesApi } from '../../services/api';
 import { createCableOffline } from '../../services/offline';
 
+interface DeviceTemplate {
+  portLayout?: string;
+}
+
 interface DeviceItem {
   id: string;
   name: string;
   rack?: { name: string };
+  template?: DeviceTemplate;
+}
+
+interface PortItem {
+  key: string;
+  type: string;
+  panel: 'FRONT' | 'REAR';
 }
 
 interface Paged<T> {
@@ -22,13 +33,46 @@ const cableTypes = [
   { label: '其他', value: 'OTHER' },
 ];
 
+function toPortItems(layout: unknown): PortItem[] {
+  let parsed: any = layout;
+  if (typeof layout === 'string') {
+    try { parsed = JSON.parse(layout); } catch { parsed = {}; }
+  }
+  if (!parsed || typeof parsed !== 'object') return [];
+  const front = Array.isArray(parsed?.front) ? parsed.front : [];
+  const rear = Array.isArray(parsed?.rear) ? parsed.rear : [];
+  const normalize = (ports: any[], panel: 'FRONT' | 'REAR'): PortItem[] =>
+    ports
+      .map((port) => {
+        const key = String(port?.index ?? port?.id ?? port?.name ?? '').trim();
+        if (!key) return null;
+        return { key, type: String(port?.type ?? 'UNKNOWN'), panel };
+      })
+      .filter((p): p is PortItem => p !== null);
+  return [...normalize(front, 'FRONT'), ...normalize(rear, 'REAR')];
+}
+
 export default function MobileRecord() {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [srcDeviceId, setSrcDeviceId] = useState<string | undefined>();
+  const [dstDeviceId, setDstDeviceId] = useState<string | undefined>();
   const isOnline = navigator.onLine;
 
   const { data: devicesResp } = useRequest<Paged<DeviceItem>, []>(() => devicesApi.list({ pageSize: 1000 }));
   const devices = devicesResp?.data ?? [];
+
+  const srcPorts = useMemo(() => {
+    if (!srcDeviceId) return [];
+    const device = devices.find((d) => d.id === srcDeviceId);
+    return toPortItems(device?.template?.portLayout);
+  }, [srcDeviceId, devices]);
+
+  const dstPorts = useMemo(() => {
+    if (!dstDeviceId) return [];
+    const device = devices.find((d) => d.id === dstDeviceId);
+    return toPortItems(device?.template?.portLayout);
+  }, [dstDeviceId, devices]);
 
   const { runAsync: createOnline } = useRequest((payload: any) => cablesApi.create(payload), {
     manual: true,
@@ -48,6 +92,8 @@ export default function MobileRecord() {
       }
 
       form.resetFields();
+      setSrcDeviceId(undefined);
+      setDstDeviceId(undefined);
     } catch (error: any) {
       if (!error?.errorFields) {
         message.error(error?.message || '提交失败');
@@ -66,22 +112,54 @@ export default function MobileRecord() {
               showSearch
               placeholder="选择源端设备"
               optionFilterProp="label"
+              onChange={(value) => {
+                setSrcDeviceId(value);
+                form.setFieldValue('srcPortIndex', undefined);
+              }}
               options={devices.map((item) => ({ label: `${item.name} (${item.rack?.name ?? '未上架'})`, value: item.id }))}
             />
           </Form.Item>
-          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请输入源端端口' }]}>
-            <Input placeholder="例如：GE0/0/1" />
+          <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请选择源端端口' }]}>
+            {srcPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={srcPorts.map((port) => ({
+                  value: port.key,
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                }))}
+              />
+            ) : (
+              <Input placeholder={srcDeviceId ? '该设备暂无端口配置，请手动输入' : '请先选择源端设备'} />
+            )}
           </Form.Item>
           <Form.Item name="dstDeviceId" label="目标设备" rules={[{ required: true, message: '请选择目标设备' }]}>
             <Select
               showSearch
               placeholder="选择目标设备"
               optionFilterProp="label"
+              onChange={(value) => {
+                setDstDeviceId(value);
+                form.setFieldValue('dstPortIndex', undefined);
+              }}
               options={devices.map((item) => ({ label: `${item.name} (${item.rack?.name ?? '未上架'})`, value: item.id }))}
             />
           </Form.Item>
-          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请输入目标端口' }]}>
-            <Input placeholder="例如：GE0/0/2" />
+          <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请选择目标端口' }]}>
+            {dstPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={dstPorts.map((port) => ({
+                  value: port.key,
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                }))}
+              />
+            ) : (
+              <Input placeholder={dstDeviceId ? '该设备暂无端口配置，请手动输入' : '请先选择目标设备'} />
+            )}
           </Form.Item>
           <Form.Item name="cableType" label="线缆类型" rules={[{ required: true, message: '请选择线缆类型' }]}>
             <Select placeholder="选择线缆类型" options={cableTypes} />
