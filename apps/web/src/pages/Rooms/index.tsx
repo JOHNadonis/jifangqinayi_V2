@@ -153,12 +153,16 @@ export default function Rooms() {
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      sorter: (a: Room, b: Room) => a.name.localeCompare(b.name),
+      showSorterTooltip: false,
     },
     {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
       width: 100,
+      sorter: (a: Room, b: Room) => a.type.localeCompare(b.type),
+      showSorterTooltip: false,
       render: (type: string) => (
         <Tag color={type === 'OLD' ? 'orange' : 'green'}>
           {type === 'OLD' ? '旧机房' : '新机房'}
@@ -170,6 +174,8 @@ export default function Rooms() {
       dataIndex: 'location',
       key: 'location',
       width: 200,
+      sorter: (a: Room, b: Room) => (a.location || '').localeCompare(b.location || ''),
+      showSorterTooltip: false,
     },
     {
       title: '描述',
@@ -182,6 +188,8 @@ export default function Rooms() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
+      sorter: (a: Room, b: Room) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      showSorterTooltip: false,
       render: (text: string) => new Date(text).toLocaleString('zh-CN'),
     },
     {

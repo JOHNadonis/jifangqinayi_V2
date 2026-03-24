@@ -231,34 +231,64 @@ export default function Templates() {
   };
 
   const columns = [
-    { title: '品牌', dataIndex: 'brand', width: 120 },
-    { title: '型号', dataIndex: 'model', width: 200 },
+    {
+      title: '品牌',
+      dataIndex: 'brand',
+      width: 120,
+      sorter: (a: any, b: any) => (a.brand || '').localeCompare(b.brand || ''),
+      showSorterTooltip: false,
+    },
+    {
+      title: '型号',
+      dataIndex: 'model',
+      width: 200,
+      sorter: (a: any, b: any) => (a.model || '').localeCompare(b.model || ''),
+      showSorterTooltip: false,
+    },
     {
       title: '设备类型',
       dataIndex: 'deviceType',
       width: 100,
+      sorter: (a: any, b: any) => (a.deviceType || '').localeCompare(b.deviceType || ''),
+      showSorterTooltip: false,
       render: (type: string) => {
         const item = deviceTypes.find((t) => t.value === type);
         return <Tag color={item?.color}>{item?.label || type}</Tag>;
       },
     },
-    { title: 'U高度', dataIndex: 'sizeU', width: 80 },
+    {
+      title: 'U高度',
+      dataIndex: 'sizeU',
+      width: 80,
+      sorter: (a: any, b: any) => (a.sizeU || 0) - (b.sizeU || 0),
+      showSorterTooltip: false,
+    },
     {
       title: '端口数',
       dataIndex: 'portLayout',
       width: 80,
+      sorter: (a: any, b: any) => {
+        const countA = (a.portLayout?.front?.length || 0) + (a.portLayout?.rear?.length || 0);
+        const countB = (b.portLayout?.front?.length || 0) + (b.portLayout?.rear?.length || 0);
+        return countA - countB;
+      },
+      showSorterTooltip: false,
       render: (layout: any) => (layout?.front?.length || 0) + (layout?.rear?.length || 0),
     },
     {
       title: '公开',
       dataIndex: 'isPublic',
       width: 80,
+      sorter: (a: any, b: any) => Number(a.isPublic || false) - Number(b.isPublic || false),
+      showSorterTooltip: false,
       render: (v: boolean) => (v ? <Tag color="green">是</Tag> : <Tag>否</Tag>),
     },
     {
       title: '使用数量',
       dataIndex: '_count',
       width: 100,
+      sorter: (a: any, b: any) => (a._count?.devices || 0) - (b._count?.devices || 0),
+      showSorterTooltip: false,
       render: (count: any) => count?.devices || 0,
     },
     {

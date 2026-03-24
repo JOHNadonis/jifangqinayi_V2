@@ -210,6 +210,8 @@ export default function DevicesPage() {
       dataIndex: 'name',
       key: 'name',
       width: columnWidths.name,
+      sorter: (a: Device, b: Device) => a.name.localeCompare(b.name),
+      showSorterTooltip: false,
       render: (text: string, record: Device) => (
         <Button
           type="link"
@@ -224,6 +226,14 @@ export default function DevicesPage() {
       dataIndex: 'templateName',
       key: 'templateName',
       width: columnWidths.templateName,
+      sorter: (a: Device, b: Device) => {
+        const tA = templates.find((t) => t.id === a.templateId);
+        const tB = templates.find((t) => t.id === b.templateId);
+        const labelA = tA ? `${tA.brand} ${tA.model}` : '';
+        const labelB = tB ? `${tB.brand} ${tB.model}` : '';
+        return labelA.localeCompare(labelB);
+      },
+      showSorterTooltip: false,
       render: (_: any, record: Device) => {
         const template = templates.find((t) => t.id === record.templateId);
         return template ? `${template.brand} ${template.model}` : '-';
@@ -233,6 +243,14 @@ export default function DevicesPage() {
       title: '机柜位置',
       key: 'location',
       width: columnWidths.location,
+      sorter: (a: Device, b: Device) => {
+        const rA = racks.find((r) => r.id === a.rackId);
+        const rB = racks.find((r) => r.id === b.rackId);
+        const labelA = rA ? `${rA.room?.name || ''}-${rA.name}-U${a.positionU}` : '';
+        const labelB = rB ? `${rB.room?.name || ''}-${rB.name}-U${b.positionU}` : '';
+        return labelA.localeCompare(labelB);
+      },
+      showSorterTooltip: false,
       render: (_: any, record: Device) => {
         const rack = racks.find((r) => r.id === record.rackId);
         return rack
@@ -245,6 +263,8 @@ export default function DevicesPage() {
       dataIndex: 'status',
       key: 'status',
       width: columnWidths.status,
+      sorter: (a: Device, b: Device) => a.status.localeCompare(b.status),
+      showSorterTooltip: false,
       render: (status: string) => (
         <Tag color={statusColors[status]}>{statusLabels[status]}</Tag>
       ),

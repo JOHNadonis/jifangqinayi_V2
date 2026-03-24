@@ -220,11 +220,15 @@ export default function Cables() {
       dataIndex: 'traceCode',
       key: 'traceCode',
       width: 180,
+      sorter: (a, b) => a.traceCode.localeCompare(b.traceCode),
+      showSorterTooltip: false,
       render: (value: string) => <Tag>{value}</Tag>,
     },
     {
       title: '源端设备',
       key: 'source',
+      sorter: (a, b) => (a.srcDevice?.name ?? '').localeCompare(b.srcDevice?.name ?? ''),
+      showSorterTooltip: false,
       render: (_, record) => (
         <span>
           {record.srcDevice?.name ?? '-'}
@@ -235,6 +239,8 @@ export default function Cables() {
     {
       title: '目标设备',
       key: 'target',
+      sorter: (a, b) => (a.dstDevice?.name ?? '').localeCompare(b.dstDevice?.name ?? ''),
+      showSorterTooltip: false,
       render: (_, record) => (
         <span>
           {record.dstDevice?.name ?? '-'}
@@ -247,15 +253,33 @@ export default function Cables() {
       dataIndex: 'cableType',
       key: 'cableType',
       width: 110,
+      sorter: (a, b) => a.cableType.localeCompare(b.cableType),
+      showSorterTooltip: false,
       render: (value: string) => cableTypeLabels[value] || value,
     },
-    { title: '颜色', dataIndex: 'color', key: 'color', width: 90 },
-    { title: '用途', dataIndex: 'purpose', key: 'purpose', ellipsis: true },
+    {
+      title: '颜色',
+      dataIndex: 'color',
+      key: 'color',
+      width: 90,
+      sorter: (a, b) => (a.color ?? '').localeCompare(b.color ?? ''),
+      showSorterTooltip: false,
+    },
+    {
+      title: '用途',
+      dataIndex: 'purpose',
+      key: 'purpose',
+      ellipsis: true,
+      sorter: (a, b) => (a.purpose ?? '').localeCompare(b.purpose ?? ''),
+      showSorterTooltip: false,
+    },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 110,
+      sorter: (a, b) => a.status.localeCompare(b.status),
+      showSorterTooltip: false,
       render: (value: string) => (
         <Tag color={cableStatusColor[value]}>{cableStatusLabels[value] || value}</Tag>
       ),

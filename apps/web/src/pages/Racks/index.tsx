@@ -135,18 +135,24 @@ const RacksPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      showSorterTooltip: false,
     },
     {
       title: '所属机房',
       dataIndex: 'roomName',
       key: 'roomName',
       width: 150,
+      sorter: (a, b) => (a.roomName || '').localeCompare(b.roomName || ''),
+      showSorterTooltip: false,
     },
     {
       title: '位置',
       dataIndex: 'location',
       key: 'location',
       width: 120,
+      sorter: (a, b) => (a.location || '').localeCompare(b.location || ''),
+      showSorterTooltip: false,
     },
     {
       title: 'U位总数',
@@ -154,6 +160,8 @@ const RacksPage: React.FC = () => {
       key: 'totalU',
       width: 100,
       align: 'center',
+      sorter: (a, b) => a.totalU - b.totalU,
+      showSorterTooltip: false,
     },
     {
       title: '已使用U位',
@@ -161,6 +169,8 @@ const RacksPage: React.FC = () => {
       key: 'usedU',
       width: 120,
       align: 'center',
+      sorter: (a, b) => a.usedU - b.usedU,
+      showSorterTooltip: false,
       render: (usedU: number, record: Rack) => (
         <span style={{ color: usedU > record.totalU * 0.8 ? '#ff4d4f' : undefined }}>
           {usedU}
@@ -172,6 +182,8 @@ const RacksPage: React.FC = () => {
       key: 'usageRate',
       width: 120,
       align: 'center',
+      sorter: (a, b) => (a.usedU / a.totalU) - (b.usedU / b.totalU),
+      showSorterTooltip: false,
       render: (_, record: Rack) => {
         const rate = ((record.usedU / record.totalU) * 100).toFixed(1);
         return (
@@ -187,6 +199,8 @@ const RacksPage: React.FC = () => {
       key: 'deviceCount',
       width: 100,
       align: 'center',
+      sorter: (a, b) => a.deviceCount - b.deviceCount,
+      showSorterTooltip: false,
     },
     {
       title: '描述',
