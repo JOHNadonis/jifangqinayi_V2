@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Tag, Popconfirm, message, Card, Tabs, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined, MinusCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Resizable, ResizeCallbackData } from 'react-resizable';
 import { templatesApi, importApi, exportApi } from '../services/api';
+import ImportModal from '../components/ImportModal';
 
 const ResizableTitle = (props: any) => {
   const { onResize, width, ...restProps } = props;
@@ -20,7 +21,6 @@ const ResizableTitle = (props: any) => {
     </Resizable>
   );
 };
-import ImportModal from '../components/ImportModal';
 
 const deviceTypes = [
   { value: 'SERVER', label: '服务器', color: 'blue' },
@@ -44,6 +44,41 @@ const portTypes = [
   { value: 'POWER', label: '电源口', color: '#e53e3e' },
   { value: 'MGMT', label: '管理网口', color: '#667eea' },
 ];
+
+/** 端口类型选择器：内置预设选项 + 支持自由输入自定义类型 */
+const PortTypeSelect = ({ value, onChange, style }: { value?: string; onChange?: (v: string) => void; style?: React.CSSProperties }) => {
+  const [searchText, setSearchText] = useState('');
+  const inputRef = useRef<any>(null);
+
+  const builtinOptions = portTypes.map((t) => ({ value: t.value, label: `${t.value} — ${t.label}` }));
+
+  // 如果搜索词不在预设里，就在下拉最上方额外展示一项"使用自定义"
+  const filtered = builtinOptions.filter((o) =>
+    o.label.toLowerCase().includes(searchText.toLowerCase()) || o.value.toLowerCase().includes(searchText.toLowerCase())
+  );
+  const showCustom = searchText && !portTypes.some((t) => t.value.toLowerCase() === searchText.toLowerCase());
+  const options = showCustom
+    ? [{ value: searchText, label: `自定义：${searchText}` }, ...filtered]
+    : filtered;
+
+  return (
+    <Select
+      style={style}
+      showSearch
+      value={value}
+      placeholder="选择或输入端口类型"
+      filterOption={false}
+      onSearch={setSearchText}
+      onChange={(v) => {
+        setSearchText('');
+        onChange?.(v);
+      }}
+      onBlur={() => setSearchText('')}
+      options={options}
+      ref={inputRef}
+    />
+  );
+};
 
 export default function Templates() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -467,9 +502,9 @@ export default function Templates() {
                     <Form.Item
                       {...restField}
                       name={[name, 'type']}
-                      rules={[{ required: true, message: '请选择端口类型' }]}
+                      rules={[{ required: true, message: '请选择或输入端口类型' }]}
                     >
-                      <Select style={{ width: 160 }} placeholder="端口类型" options={portTypes} />
+                      <PortTypeSelect style={{ width: 180 }} />
                     </Form.Item>
                     <Form.Item
                       {...restField}
@@ -505,9 +540,9 @@ export default function Templates() {
                     <Form.Item
                       {...restField}
                       name={[name, 'type']}
-                      rules={[{ required: true, message: '请选择端口类型' }]}
+                      rules={[{ required: true, message: '请选择或输入端口类型' }]}
                     >
-                      <Select style={{ width: 160 }} placeholder="端口类型" options={portTypes} />
+                      <PortTypeSelect style={{ width: 180 }} />
                     </Form.Item>
                     <Form.Item
                       {...restField}

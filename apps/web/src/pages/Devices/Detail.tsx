@@ -169,6 +169,7 @@ export default function DeviceDetail() {
 
   const [addCableOpen, setAddCableOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [dstDeviceId, setDstDeviceId] = useState<string | undefined>();
   const [cableForm] = Form.useForm();
   const [moveForm] = Form.useForm();
 
@@ -197,13 +198,10 @@ export default function DeviceDetail() {
   const srcPorts = useMemo(() => toPortItems(device?.template?.portLayout), [device?.template?.portLayout]);
 
   const dstPorts = useMemo(() => {
-    const dstDeviceId = cableForm.getFieldValue('dstDeviceId');
-    if (!dstDeviceId) {
-      return [];
-    }
+    if (!dstDeviceId) return [];
     const dstDevice = allDevices.find((item) => item.id === dstDeviceId);
     return toPortItems(dstDevice?.template?.portLayout);
-  }, [allDevices, cableForm]);
+  }, [dstDeviceId, allDevices]);
 
   const availableUPositions = useMemo(() => {
     const targetRackId = moveForm.getFieldValue('targetRackId');
@@ -299,6 +297,7 @@ export default function DeviceDetail() {
   const handleOpenAddCable = () => {
     cableForm.resetFields();
     cableForm.setFieldsValue({ srcDeviceId: id, cableType: 'CAT6' });
+    setDstDeviceId(undefined);
     setAddCableOpen(true);
   };
 
@@ -445,12 +444,19 @@ export default function DeviceDetail() {
           </Form.Item>
 
           <Form.Item name="srcPortIndex" label="源端端口" rules={[{ required: true, message: '请选择源端端口' }]}>
-            <Select
-              showSearch
-              placeholder="选择端口"
-              optionFilterProp="label"
-              options={srcPorts.map((port) => ({ label: `${port.key} (${port.type})`, value: port.key }))}
-            />
+            {srcPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={srcPorts.map((port) => ({
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                  value: port.key,
+                }))}
+              />
+            ) : (
+              <Input placeholder="该设备暂无端口配置，请手动输入" />
+            )}
           </Form.Item>
 
           <Divider />
@@ -460,7 +466,10 @@ export default function DeviceDetail() {
               showSearch
               placeholder="选择目标设备"
               optionFilterProp="label"
-              onChange={() => cableForm.setFieldValue('dstPortIndex', undefined)}
+              onChange={(value) => {
+                setDstDeviceId(value);
+                cableForm.setFieldValue('dstPortIndex', undefined);
+              }}
               options={allDevices
                 .filter((item) => item.id !== device.id)
                 .map((item) => ({ label: item.name, value: item.id }))}
@@ -468,12 +477,19 @@ export default function DeviceDetail() {
           </Form.Item>
 
           <Form.Item name="dstPortIndex" label="目标端口" rules={[{ required: true, message: '请选择目标端口' }]}>
-            <Select
-              showSearch
-              placeholder="选择端口"
-              optionFilterProp="label"
-              options={dstPorts.map((port) => ({ label: `${port.key} (${port.type})`, value: port.key }))}
-            />
+            {dstPorts.length > 0 ? (
+              <Select
+                showSearch
+                placeholder="选择端口"
+                optionFilterProp="label"
+                options={dstPorts.map((port) => ({
+                  label: `${port.panel === 'FRONT' ? '前' : '后'}:${port.key} (${port.type})`,
+                  value: port.key,
+                }))}
+              />
+            ) : (
+              <Input placeholder={dstDeviceId ? '该设备暂无端口配置，请手动输入' : '请先选择目标设备'} />
+            )}
           </Form.Item>
 
           <Form.Item name="cableType" label="线缆类型" rules={[{ required: true, message: '请选择线缆类型' }]}>
